@@ -1,6 +1,7 @@
 import argparse
 import os
 import pathlib
+import re
 import sys
 
 from rich import print
@@ -9,35 +10,40 @@ from AminoExtract import __prog__, __version__
 from AminoExtract.functions import QuickArgFormatter, RichParser, log
 
 
-def validate_output_type(args, parser):
-    outtype = None
-    if args.output_type.upper() in ("COMBINED", "COMB"):
-        if not pathlib.Path(args.output).suffixes:
-            log.error(f"The given output-type is set to [green]'combined'[/green] as you provided [cyan]'{args.output_type}'[/cyan] as the output-type.\nHowever, the given output ([red]'{args.output}'[/red]) does not have a valid file extension such as [green]'.fasta'[/green] or [green]'.fa'[/green].\nPlease try again")
-            sys.exit(1)
-        outtype = 0
-    if args.output_type.upper() in ("SEPARATE", "SEP"):
-        if pathlib.Path(args.output).suffixes:
-            log.error(f"The given output-type is set to [green]'separate'[/green] as you provided [cyan]'{args.output_type}'[/cyan] as the output-type.\nHowever, the given output([red]'{args.output}'[/red]) has a file extension while we expect a this to be a folder for this output-type.\nPlease try again")
-            if args.yes is True:
-                outtype = 1
-            else:
-                sys.exit(1)
-        outtype = 1
-    args.output_type = outtype
+def set_output_type(args):
+    args.outtype = 0
 
-    if not isinstance(args.output_type, int) and args.output_type.upper() not in ("COMBINED", "SEPARATE", "COMB", "SEP"):
-
-        log.error(f"'[red]{args.output_type}[/red]' is not a valid output type.\n Please use either 'Combined' or 'Separate', or their shortened versions 'comb' or 'sep'.\n See '[bold]{__prog__} --help[/bold]' for more info or check out the docs.")
-        sys.exit(1)
-
-
+    if not pathlib.Path(args.output).suffixes:
+        log.info(
+            f"The given output seems to be a directory.\nAll amino acid sequences will be written to individual files in this directory.\n([cyan]{args.output}[/cyan])"
+        )
+        args.outtype = 1
+        return args
+    log.info(
+        f"The given output seems to be a file.\nAll amino acid sequences will be written to this file.\n([cyan]{args.output}[/cyan])"
+    )
     return args
 
+def check_features(args):
+    if args.feature_type not in ["CDS", "gene", "all"]:
+        log.error(
+            f"[green]'{args.feature_type}'[/green] is not a valid feature type.\nPlease use any of the following: [bold]'CDS','gene', or 'all'[/bold]"
+        )
+        sys.exit(1)
+    return args
+
+def check_valid_output_filename(args):
+    output_ext = pathlib.PurePath(args.output).name
+    if not re.match("^[\w\-. ]+$", output_ext) or "/." in str(args.output):
+        log.error(
+            f"'[red]{output_ext}[/red]' does not seem to be a valid filename.\nPlease use only alphanumeric characters, underscores, and dashes."
+        )
+        sys.exit(1)
+    return args
 
 def check_file_ext(fname, choices, ftype):
-    '''> Check if the file exists and has a valid extension
-    
+    """> Check if the file exists and has a valid extension
+
     Parameters
     ----------
     fname
@@ -46,12 +52,12 @@ def check_file_ext(fname, choices, ftype):
         A list of valid file extensions for the file type.
     ftype
         This is the type of file you're checking. It's used in the error message.
-    
+
     Returns
     -------
         The absolute path of the file.
-    
-    '''
+
+    """
     if os.path.isfile(fname):
         file_exts = "".join(pathlib.Path(fname).suffixes)
         if file_exts not in choices:
@@ -116,8 +122,8 @@ def get_args(givenargs):
         "-o",
         type=lambda s: pathlib.Path(s).absolute(),
         metavar="Path",
-        help="Output path, either a file or directory.\nSpecify what type of output you want with '--output-type'",
-        required=True
+        help="Output path, either a [underline cyan]file[/underline cyan] or [underline magenta]directory[/underline magenta].\n * If a file path is given, then all amino acid sequences will be written to this file.\n * If a directory path is given, then each amino acid sequence will be written to a separate file in this directory.\n [underline]Please see the docs for more info[/underline]",
+        required=True,
     )
 
     req_args.add_argument(
@@ -125,35 +131,18 @@ def get_args(givenargs):
         "-n",
         type=str,
         metavar="Text",
-        help="Name of the sample that is being processed.\n * This will be used to create the fasta headers, if 'Separate' is specified as the output type then this name will also be used to create the output files.\n [underline]Please see the docs for more info[/underline]",
+        help="Name of the sample that is being processed.\n * This will be used to create the fasta headers when all amino acid sequences are written to a single file.\n * If the output is going to be written to individual files in an output-directory then this name will be used as a prefix to create the output files.\n [underline]Please see the docs for more info[/underline]",
         required=True,
     )
 
-    req_args.add_argument(
-        "--output-type",
-        "-ot",
-        type=str,
-        metavar="Combined/Separate",
-        help=f"Output type; Should be either 'Combined' or 'Separate'.\n * If 'Combined' is specified then {__prog__} will output all found amino acid sequences to a single fasta file.\n * The output file should end with a valid fasta file extension.\n * If 'Separate' is specified then {__prog__} will output all found amino acid sequences to separate fasta files for each sequence.\n [underline]Please see the docs for more info[/underline]",
-        required=True
-    )
-    
     opt_args.add_argument(
-        '--feature-type',
-        '-ft',
+        "--feature-type",
+        "-ft",
         type=str,
         metavar="Text",
         default="CDS",
         help="Defines which feature types in the input gff will be processed to amino acid sequences. Defaults to 'CDS'.\nOptions are 'CDS', 'gene', and 'all",
-        required=False
-    )
-    
-    opt_args.add_argument(
-        "--yes",
-        "-y",
-        action="store_true",
-        default=False,
-        help="Do not ask for confirmation"
+        required=False,
     )
 
     opt_args.add_argument(
@@ -172,15 +161,10 @@ def get_args(givenargs):
         help="Show this help message and exit.",
     )
 
-    return parser.parse_args(givenargs), parser
+    return parser.parse_args(givenargs)
 
 
 def validate_args(givenargs):
-    parsed_args, parser = get_args(givenargs)
-    parsed_args = validate_output_type(parsed_args, parser)
-    # print(parsed_args)
-    #
-    # print(pathlib.Path.is_dir(parsed_args.output))
-    # print(pathlib.Path(parsed_args.output).suffixes)
-    #
-    return parsed_args
+    parsed_args = set_output_type(get_args(givenargs))
+    parsed_args = check_features(parsed_args)
+    return check_valid_output_filename(parsed_args)
