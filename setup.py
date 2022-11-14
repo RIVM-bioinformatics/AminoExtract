@@ -1,9 +1,9 @@
 import sys
 
-from AminoExtract import __prog__, __version__
+from AminoExtract import __version__, __prog__
 
-if sys.version_info.major != 3 or sys.version_info.minor < 7:
-    print("Error: you must execute setup.py using Python 3.7 or later")
+if sys.version_info.major != 3 or sys.version_info.minor < 10:
+    print("Error: you must execute setup.py using Python 3.10 or later")
     sys.exit(1)
 
 from setuptools import find_packages, setup
@@ -19,15 +19,15 @@ setup(
     license="MIT",
     author_email="florian.zwagemaker@rivm.nl",
     long_description=long_description,
-    description="AminoExtract is a basic program to extra aminoacid sequences from a fasta file based on a GFF.",
+    description="AminoExtract is an application to extract aminoacid sequences from a fasta file based on a GFF.",
     long_description_content_type="text/markdown",
-    python_requires=">=3.7",
+    python_requires=">=3.10",
     packages=find_packages(),
-    install_requires=["biopython", "gffpandas"],
+    install_requires=["biopython", "pandas", "rich", "python-magic"],
     entry_points={
         "console_scripts": [
-            "aminoextract = AminoExtract:main",
-            "AminoExtract = AminoExtract:main",
+            "aminoextract = AminoExtract.__main__:main",
+            "AminoExtract = AminoExtract.__main__:main",
         ]
     },
     keywords=[],
