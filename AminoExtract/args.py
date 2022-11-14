@@ -10,7 +10,7 @@ from AminoExtract import __prog__, __version__
 from AminoExtract.functions import QuickArgFormatter, RichParser, log
 
 
-def set_output_type(args):
+def set_output_type(args: argparse.Namespace) -> argparse.Namespace:
     args.outtype = 0
 
     if not pathlib.Path(args.output).suffixes:
@@ -24,15 +24,17 @@ def set_output_type(args):
     )
     return args
 
-def check_features(args):
+
+def check_features(args: argparse.Namespace) -> argparse.Namespace:
     if args.feature_type not in ["CDS", "gene", "all"]:
         log.error(
-            f"[green]'{args.feature_type}'[/green] is not a valid feature type.\nPlease use any of the following: [bold]'CDS','gene', or 'all'[/bold]"
+            f"[green]'{args.feature_type}'[/green] is not a valid feature type.\nPlease use any of the following: [bold]'CDS'[/bold],[bold]'gene'[/bold], or [bold]'all'[/bold]\nThese keywords are case-sensitive."
         )
         sys.exit(1)
     return args
 
-def check_valid_output_filename(args):
+
+def check_valid_output_filename(args: argparse.Namespace) -> argparse.Namespace:
     output_ext = pathlib.PurePath(args.output).name
     if not re.match("^[\w\-. ]+$", output_ext) or "/." in str(args.output):
         log.error(
@@ -41,8 +43,11 @@ def check_valid_output_filename(args):
         sys.exit(1)
     return args
 
-def check_file_ext(fname, choices, ftype):
-    """> Check if the file exists and has a valid extension
+
+def check_file_ext(
+    fname: str | None = None, choices: list[str] | None = None, ftype: str | None = None
+) -> pathlib.Path | None:
+    """Check if the file exists and has a valid extension
 
     Parameters
     ----------
@@ -58,20 +63,20 @@ def check_file_ext(fname, choices, ftype):
         The absolute path of the file.
 
     """
-    if os.path.isfile(fname):
+    if fname is not None and os.path.isfile(fname):
         file_exts = "".join(pathlib.Path(fname).suffixes)
-        if file_exts not in choices:
+        if choices is not None and file_exts not in choices:
             log.error(
                 f"{fname} does not have a valid {ftype} file extension.\nPlease use any of the following extensions: [bold]{' '.join(choices)}[/bold]"
             )
             sys.exit(1)
-        return pathlib.Path(fname).absolute()
+        return pathlib.Path(fname).resolve()
     log.error(f"[green]'{fname}'[/green] is not a file.\n Exiting...")
     sys.exit(1)
 
 
-def get_args(givenargs):
-    """> This function takes in a list of arguments, parses them, and returns a Namespace object
+def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
+    """This function takes in a list of arguments, parses them, and returns a Namespace object
 
     Parameters
     ----------
@@ -102,7 +107,7 @@ def get_args(givenargs):
     req_args.add_argument(
         "--input",
         "-i",
-        type=lambda s: check_file_ext(s, (".fasta", ".fas", ".fna", ".fa"), "FASTA"),
+        type=lambda s: check_file_ext(s, [".fasta", ".fas", ".fna", ".fa"], "FASTA"),
         metavar="File",
         help="Input FASTA file with nucleotide sequences.",
         required=True,
@@ -112,7 +117,7 @@ def get_args(givenargs):
         "--features",
         "-gff",
         metavar="File",
-        type=lambda s: check_file_ext(s, (".gff", ".gff3"), "GFF"),
+        type=lambda s: check_file_ext(s, [".gff", ".gff3"], "GFF"),
         help="GFF file containing the information of the amino acid sequences to extract.",
         required=True,
     )
@@ -141,7 +146,7 @@ def get_args(givenargs):
         type=str,
         metavar="Text",
         default="CDS",
-        help="Defines which feature types in the input gff will be processed to amino acid sequences. Defaults to 'CDS'.\nOptions are 'CDS', 'gene', and 'all",
+        help="Defines which feature types in the input gff will be processed to amino acid sequences. Defaults to 'CDS'.\nOptions are 'CDS', 'gene', and 'all'",
         required=False,
     )
 
@@ -161,10 +166,12 @@ def get_args(givenargs):
         help="Show this help message and exit.",
     )
 
+    # TODO: add extra arg for extra gff filters such as source, strand, etc.
+
     return parser.parse_args(givenargs)
 
 
-def validate_args(givenargs):
+def validate_args(givenargs: list[str]) -> argparse.Namespace:
     parsed_args = set_output_type(get_args(givenargs))
     parsed_args = check_features(parsed_args)
     return check_valid_output_filename(parsed_args)
