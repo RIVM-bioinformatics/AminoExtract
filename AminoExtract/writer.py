@@ -20,9 +20,9 @@ def write_aa_file(
     AA_dict : dict[str, dict[str, Seq.Seq]]
         a dictionary of dictionaries. The first dictionary is keyed by the sequence ID, and the second
     dictionary is keyed by the feature name. The value of the second dictionary is the amino acid
-    sequence.
+    sequence as a biopython Seq() object.
     output : pathlib.Path
-        The path to the output file.
+        The path to the output file or directory as a (POSIX)Path object
     name : str
         The name of the output file.
     outtype : int

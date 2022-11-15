@@ -1,6 +1,6 @@
 import sys
 
-from AminoExtract import __version__, __prog__
+from AminoExtract import __prog__, __version__
 
 if sys.version_info.major != 3 or sys.version_info.minor < 10:
     print("Error: you must execute setup.py using Python 3.10 or later")
