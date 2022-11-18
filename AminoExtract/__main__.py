@@ -1,7 +1,7 @@
 """
-Copyright (C) 2022  Florian Zwagemaker
+Copyright (C) 2022  RIVM
 
-https://github.com/florianzwagemaker/AminoExtract
+https://github.com/RIVM-bioinformatics/AminoExtract
 """
 
 import sys
