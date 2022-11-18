@@ -15,7 +15,7 @@ setup(
     name=__prog__,
     version=__version__,
     author="Florian Zwagemaker",
-    project_urls={"Source Code": "https://github.com/florianzwagemaker/AminoExtract"},
+    project_urls={"Source Code": "https://github.com/RIVM-bioinformatics/AminoExtract"},
     license="MIT",
     author_email="ids-bioinformatics@rivm.nl",
     long_description=long_description,
