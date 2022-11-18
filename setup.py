@@ -17,7 +17,7 @@ setup(
     author="Florian Zwagemaker",
     project_urls={"Source Code": "https://github.com/florianzwagemaker/AminoExtract"},
     license="MIT",
-    author_email="florian.zwagemaker@rivm.nl",
+    author_email="ids-bioinformatics@rivm.nl",
     long_description=long_description,
     description="AminoExtract is an application to extract aminoacid sequences from a fasta file based on a GFF.",
     long_description_content_type="text/markdown",
