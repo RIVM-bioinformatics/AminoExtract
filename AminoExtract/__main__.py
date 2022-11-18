@@ -6,31 +6,34 @@ https://github.com/florianzwagemaker/AminoExtract
 
 import sys
 
-import pandas as pd
-from rich import print
-
 from AminoExtract.args import validate_args
-from AminoExtract.filter import filter_gff, filter_sequences
-from AminoExtract.functions import log
-from AminoExtract.reader import GffDataFrame, read_fasta, read_gff
+from AminoExtract.filter import empty_dataframe, filter_gff, filter_sequences
+from AminoExtract.reader import read_fasta, read_gff
 from AminoExtract.sequences import Extract_AminoAcids
 from AminoExtract.writer import write_aa_file
-
-
-def empty_dataframe(
-    frame: pd.DataFrame = pd.DataFrame(), feature_type: str | None = None
-) -> bool:
-    if frame.empty or feature_type is None:
-        log.warn(
-            f"The GFF file is empty after filtering.\nThis might mean that there are no records within the GFF that match the sequence ID(s) in the given Fasta file.\nThis could also mean that there are no records within the GFF that match the feature type '[cyan]{feature_type}[/cyan]'.\nPlease check your inputs and try again."
-        )
-        return True
-    return False
 
 
 def get_feature_name_attribute(
     input_gff: str, input_seq: str, feature_type: str
 ) -> dict[str, list[str]]:
+    """This function takes a GFF file, a FASTA file, and a feature type, and returns a dictionary of the
+        feature names for each sequence in the FASTA file
+
+        Parameters
+        ----------
+        input_gff : str
+            the path to the gff file
+        input_seq : str
+            The path to the fasta file containing the sequences you want to extract features from.
+        feature_type : str
+            This is the type of feature you want to extract from the GFF file. For example, if you want to
+    extract the CDS features, you would enter "CDS". Options are "CDS", "gene" and "all".
+
+        Returns
+        -------
+            A dictionary with the sequence id as the key and a list of the feature names as the value.
+
+    """
     gff = read_gff(file=input_gff, verbose=False)
     seq = read_fasta(input_seq)
     gff_records = filter_gff(GffRecords=gff, SeqRecords=seq, feature_type=feature_type)
@@ -56,9 +59,6 @@ def main() -> None:
     sys.exit(1) if empty_dataframe(GFF_Obj.df, args.feature_type) else None
     SeqRecords = filter_sequences(GFF_Obj, fasta_records)
 
-    log.info(
-        "Extracting and translating the amino acid sequence(s) from the nucleotide sequence(s)"
-    )
-    AA_dict = Extract_AminoAcids(GFFobj=GFF_Obj, SeqRecords=SeqRecords)
+    AA_dict = Extract_AminoAcids(GFFobj=GFF_Obj, SeqRecords=SeqRecords, verbose=True)
 
     write_aa_file(AA_dict, args.output, args.name, args.outtype)

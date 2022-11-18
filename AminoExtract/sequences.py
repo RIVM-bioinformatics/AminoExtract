@@ -24,7 +24,9 @@ def Reverse_complement(seq: str) -> Seq:
     return seq_obj.reverse_complement()  # type: ignore as BioPythons seq object is weird with typehints
 
 
-def Extract_AminoAcids(GFFobj: GffDataFrame, SeqRecords: list) -> dict:
+def Extract_AminoAcids(
+    GFFobj: GffDataFrame, SeqRecords: list, verbose: bool = False
+) -> dict:
     """
     Extract amino acids from the SeqRecord objects based on the start and end positions of the GFFobj.df dataframe
 
@@ -42,6 +44,11 @@ def Extract_AminoAcids(GFFobj: GffDataFrame, SeqRecords: list) -> dict:
     dict
         A dictionary with the SeqRecord id as the key and the amino acid sequences as the value.
     """
+
+    log.info(
+        "Extracting and translating the amino acid sequence(s) from the nucleotide sequence(s)"
+    ) if verbose else None
+
     # create a dictionary with the SeqRecord.id as the key and the SeqRecord.seq as the value
     SeqDict = {record.id: record.seq for record in SeqRecords}
     # create an empty dictionary

@@ -91,3 +91,14 @@ def filter_sequences(gff: GffDataFrame, SeqRecords: list):
 
     """
     return [record for record in SeqRecords if record.id in gff.df["seqid"].tolist()]
+
+
+def empty_dataframe(
+    frame: pd.DataFrame = pd.DataFrame(), feature_type: str | None = None
+) -> bool:
+    if frame.empty or feature_type is None:
+        log.warn(
+            f"The GFF file is empty after filtering.\nThis might mean that there are no records within the GFF that match the sequence ID(s) in the given Fasta file.\nThis could also mean that there are no records within the GFF that match the feature type '[cyan]{feature_type}[/cyan]'.\nPlease check your inputs and try again."
+        )
+        return True
+    return False
