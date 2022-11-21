@@ -45,7 +45,7 @@ def write_aa_file(
         for SeqID, features in AA_dict.items():
             for feature, aa in features.items():
                 log.info(
-                    f"Writing '[cyan]{SeqID} - {feature}[/cyan]' to file \"[green]{output / f'{name}_{SeqID}_{feature}.faa'}[/green]\""
+                    f"Writing '[cyan]{SeqID} - {feature}[/cyan]' to file \"[green]{output / f'{name}_{feature}.faa'}[/green]\""
                 )
-                with open(output / f"{name}_{SeqID}_{feature}.faa", "w") as out:
+                with open(output / f"{name}_{feature}.faa", "w") as out:
                     out.write(f">{SeqID} {feature}\n{aa}\n")
