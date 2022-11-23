@@ -38,7 +38,7 @@ def write_aa_file(
                     log.info(
                         f"Writing '[cyan]{SeqID} - {feature}[/cyan]' to file '[green]{output}[/green]'"
                     )
-                    out.write(f">{name}_{SeqID} {feature}\n{aa}\n")
+                    out.write(f">{name}.{feature}\n{aa}\n")
     elif outtype == 1:
         if not output.exists():
             output.mkdir()
@@ -48,4 +48,4 @@ def write_aa_file(
                     f"Writing '[cyan]{SeqID} - {feature}[/cyan]' to file \"[green]{output / f'{name}_{feature}.faa'}[/green]\""
                 )
                 with open(output / f"{name}_{feature}.faa", "w") as out:
-                    out.write(f">{SeqID} {feature}\n{aa}\n")
+                    out.write(f">{SeqID}.{feature}\n{aa}\n")
