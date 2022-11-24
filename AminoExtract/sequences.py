@@ -56,6 +56,13 @@ def Extract_AminoAcids(
 
     # iterate through the dataframe
     for row in GFFobj.df.itertuples():
+        try:
+            name = row.Name
+        except AttributeError:	
+            log.warn("No '[green]Name[/green]' attribute found in GFF records. Using '[cyan]ID[/cyan]' instead") if verbose else None
+            name = f"ID-{row.ID}"
+        
+        
         # get the sequence ID from the row
         seq_id = row.seqid
 
@@ -84,5 +91,5 @@ def Extract_AminoAcids(
         AASequence = seq_slice_obj.translate(to_stop=True)
 
         # add the amino acid sequence to the amino_acid_dict dictionary
-        AA_dict[seq_id][row.Name] = AASequence
+        AA_dict[seq_id][name] = AASequence
     return AA_dict
