@@ -111,6 +111,11 @@ class GffDataFrame(object):
 
         """
         self.df["attributes"] = self.df["attributes"].apply(_attr_string_to_dict)
+        columns = self.df.columns.tolist()
+        # remove key-value pair from the dictionary in the attributes column if the key is already a column
+        self.df["attributes"] = self.df["attributes"].apply(
+            lambda attr: {k: v for k, v in attr.items() if k not in columns}
+        )
         self.df = self.df.join(pd.DataFrame(self.df["attributes"].to_dict()).T).drop(
             "attributes", axis=1
         )
