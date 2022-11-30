@@ -58,11 +58,12 @@ def Extract_AminoAcids(
     for row in GFFobj.df.itertuples():
         try:
             name = row.Name
-        except AttributeError:	
-            log.warn("No '[green]Name[/green]' attribute found in GFF records. Using '[cyan]ID[/cyan]' instead") if verbose else None
+        except AttributeError:
+            log.warn(
+                "No '[green]Name[/green]' attribute found in GFF records. Using '[cyan]ID[/cyan]' instead"
+            ) if verbose else None
             name = f"ID-{row.ID}"
-        
-        
+
         # get the sequence ID from the row
         seq_id = row.seqid
 

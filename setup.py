@@ -38,5 +38,6 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
         "Intended Audience :: Science/Research",
-        "Operating System :: POSIX"]
+        "Operating System :: POSIX",
+    ],
 )
