@@ -36,13 +36,18 @@ def Extract_AminoAcids(
         GffDataFrame
     SeqRecords : list
         list of SeqRecord objects
-    feature_type : str
-        str
+    keep_gaps : bool, optional
+        If True, gaps ('-') in the nucleotide sequence will not be removed before AA translation.
+        If False, gaps will be removed from the nucleotide sequence before translation.
+        (default is False)
+    verbose : bool, optional
+        bool = False
 
     Returns
     -------
-    dict
-        A dictionary with the SeqRecord id as the key and the amino acid sequences as the value.
+        A dictionary with the sequence ID as the key and a dictionary as the value. The dictionary has the
+    name of the feature as the key and the amino acid sequence as the value.
+
     """
 
     log.info(
