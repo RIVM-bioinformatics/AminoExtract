@@ -59,6 +59,8 @@ def main() -> None:
     sys.exit(1) if empty_dataframe(GFF_Obj.df, args.feature_type) else None
     SeqRecords = filter_sequences(GFF_Obj, fasta_records)
 
-    AA_dict = Extract_AminoAcids(GFFobj=GFF_Obj, SeqRecords=SeqRecords, verbose=True)
+    AA_dict = Extract_AminoAcids(
+        GFFobj=GFF_Obj, SeqRecords=SeqRecords, keep_gaps=args.keep_gaps, verbose=True
+    )
 
     write_aa_file(AA_dict, args.output, args.name, args.outtype)

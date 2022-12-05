@@ -1,5 +1,4 @@
 import pathlib
-import sys
 
 from Bio import Seq
 

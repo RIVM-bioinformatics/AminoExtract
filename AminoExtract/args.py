@@ -4,8 +4,6 @@ import pathlib
 import re
 import sys
 
-from rich import print
-
 from AminoExtract import __prog__, __version__
 from AminoExtract.functions import QuickArgFormatter, RichParser, log
 
@@ -147,6 +145,15 @@ def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
         metavar="Text",
         default="CDS",
         help="Defines which feature types in the input gff will be processed to amino acid sequences. Defaults to 'CDS'.\nOptions are 'CDS', 'gene', and 'all'",
+        required=False,
+    )
+
+    opt_args.add_argument(
+        "--keep-gaps",
+        "-kg",
+        action="store_true",
+        default=False,
+        help='If this flag is set then the amino acid translation will be done including gaps in the nucleotide sequence.\nThis results in an "X" on gap positions in the aminoacid sequence.\n [underline]By default, gaps are removed before translation.[/underline]',
         required=False,
     )
 

@@ -1,7 +1,4 @@
-import sys
-
 from Bio.Seq import Seq
-from rich import print
 
 from AminoExtract.functions import log
 from AminoExtract.reader import GffDataFrame
@@ -25,7 +22,10 @@ def Reverse_complement(seq: str) -> Seq:
 
 
 def Extract_AminoAcids(
-    GFFobj: GffDataFrame, SeqRecords: list, verbose: bool = False
+    GFFobj: GffDataFrame,
+    SeqRecords: list,
+    keep_gaps: bool = False,
+    verbose: bool = False,
 ) -> dict:
     """
     Extract amino acids from the SeqRecord objects based on the start and end positions of the GFFobj.df dataframe
@@ -76,7 +76,11 @@ def Extract_AminoAcids(
         NucSequence = SeqDict[seq_id]
 
         # get the sequence slice from the start to the end position
-        seq_slice = NucSequence[start:end].replace("-", "")
+        seq_slice = (
+            NucSequence[start:end]
+            if keep_gaps
+            else NucSequence[start:end].replace("-", "")
+        )
 
         # convert the sequence slice to a string
         seq_slice_str = str(seq_slice)
