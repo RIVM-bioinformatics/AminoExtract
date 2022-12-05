@@ -32,4 +32,12 @@ setup(
     },
     keywords=[],
     zip_safe=False,
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Programming Language :: Python :: 3.10",
+        "License :: OSI Approved :: MIT License",
+        "Topic :: Scientific/Engineering :: Bio-Informatics",
+        "Intended Audience :: Science/Research",
+        "Operating System :: POSIX",
+    ],
 )

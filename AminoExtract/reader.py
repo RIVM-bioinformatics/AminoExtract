@@ -3,7 +3,7 @@ import sys
 
 import magic
 import pandas as pd
-from Bio import Seq, SeqIO
+from Bio import SeqIO
 
 from AminoExtract.functions import log
 

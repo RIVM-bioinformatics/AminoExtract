@@ -1,7 +1,4 @@
-import sys
-
 from Bio.Seq import Seq
-from rich import print
 
 from AminoExtract.functions import log
 from AminoExtract.reader import GffDataFrame
@@ -25,7 +22,10 @@ def Reverse_complement(seq: str) -> Seq:
 
 
 def Extract_AminoAcids(
-    GFFobj: GffDataFrame, SeqRecords: list, verbose: bool = False
+    GFFobj: GffDataFrame,
+    SeqRecords: list,
+    keep_gaps: bool = False,
+    verbose: bool = False,
 ) -> dict:
     """
     Extract amino acids from the SeqRecord objects based on the start and end positions of the GFFobj.df dataframe
@@ -36,13 +36,18 @@ def Extract_AminoAcids(
         GffDataFrame
     SeqRecords : list
         list of SeqRecord objects
-    feature_type : str
-        str
+    keep_gaps : bool, optional
+        If True, gaps ('-') in the nucleotide sequence will not be removed before AA translation.
+        If False, gaps will be removed from the nucleotide sequence before translation.
+        (default is False)
+    verbose : bool, optional
+        bool = False
 
     Returns
     -------
-    dict
-        A dictionary with the SeqRecord id as the key and the amino acid sequences as the value.
+        A dictionary with the sequence ID as the key and a dictionary as the value. The dictionary has the
+    name of the feature as the key and the amino acid sequence as the value.
+
     """
 
     log.info(
@@ -58,11 +63,12 @@ def Extract_AminoAcids(
     for row in GFFobj.df.itertuples():
         try:
             name = row.Name
-        except AttributeError:	
-            log.warn("No '[green]Name[/green]' attribute found in GFF records. Using '[cyan]ID[/cyan]' instead") if verbose else None
+        except AttributeError:
+            log.warn(
+                "No '[green]Name[/green]' attribute found in GFF records. Using '[cyan]ID[/cyan]' instead"
+            ) if verbose else None
             name = f"ID-{row.ID}"
-        
-        
+
         # get the sequence ID from the row
         seq_id = row.seqid
 
@@ -75,7 +81,11 @@ def Extract_AminoAcids(
         NucSequence = SeqDict[seq_id]
 
         # get the sequence slice from the start to the end position
-        seq_slice = NucSequence[start:end].replace("-", "")
+        seq_slice = (
+            NucSequence[start:end]
+            if keep_gaps
+            else NucSequence[start:end].replace("-", "")
+        )
 
         # convert the sequence slice to a string
         seq_slice_str = str(seq_slice)
