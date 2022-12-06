@@ -153,7 +153,7 @@ def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
         "-kg",
         action="store_true",
         default=False,
-        help='If this flag is set then the amino acid translation will be done including gaps in the nucleotide sequence.\nThis results in an "X" on gap positions in the aminoacid sequence.\n [underline]By default, gaps are removed before translation.[/underline]',
+        help='If this flag is set then the amino acid translation will be done including gaps in the nucleotide sequence.\n This results in an "X" on gapped positions in the aminoacid sequence as gap characters ("-") will be replaced by "N" in the nucleotide sequence.\n  [underline]By default, gaps are removed before translation.[/underline]',
         required=False,
     )
 
