@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/RIVM-bioinformatics/AminoExtract/compare/v0.2.0...v0.2.1) (2022-12-06)
+
+
+### Bug Fixes
+
+* replace gaps in nucleotide-seq with "N" characters to ensure valid translation when `--keep-gaps` flag is given. (forces ambigious AA call) ([bf4ed5f](https://github.com/RIVM-bioinformatics/AminoExtract/commit/bf4ed5f1492bfc357fe3d64c175c2f7a55e595ee))
+
 ## [0.2.0](https://github.com/RIVM-bioinformatics/AminoExtract/compare/v0.1.0...v0.2.0) (2022-12-05)
 
 

@@ -82,7 +82,7 @@ def Extract_AminoAcids(
 
         # get the sequence slice from the start to the end position
         seq_slice = (
-            NucSequence[start:end]
+            NucSequence[start:end].replace("-", "N")
             if keep_gaps
             else NucSequence[start:end].replace("-", "")
         )
