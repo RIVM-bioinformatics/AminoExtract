@@ -73,6 +73,7 @@ class GffDataFrame(object):
                 "attributes",
             ],
             compression="gzip",
+            keep_default_na=False,
         )
         self.df = self._split_attributes_column()
         return self.df
@@ -93,6 +94,7 @@ class GffDataFrame(object):
                 "phase",
                 "attributes",
             ],
+            keep_default_na=False,
         )
         self.df = self._split_attributes_column()
         return self.df
@@ -190,7 +192,7 @@ def readable_file_type(infile: str) -> bool:
     )
 
 
-def read_gff(file: str, verbose: bool = True) -> GffDataFrame:
+def read_gff(file: str, verbose: bool = False) -> GffDataFrame:
     """Reads a GFF file and returns a GFFdataframe object
 
     Parameters
