@@ -21,7 +21,7 @@ def Reverse_complement(seq: str) -> Seq:
     return seq_obj.reverse_complement()  # type: ignore as BioPythons seq object is weird with typehints
 
 
-def Extract_AminoAcids(
+def extract_aminoacids(
     GFFobj: GffDataFrame,
     SeqRecords: list,
     keep_gaps: bool = False,

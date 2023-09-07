@@ -9,7 +9,7 @@ import sys
 from AminoExtract.args import validate_args
 from AminoExtract.filter import empty_dataframe, filter_gff, filter_sequences
 from AminoExtract.reader import read_fasta, read_gff
-from AminoExtract.sequences import Extract_AminoAcids
+from AminoExtract.sequences import extract_aminoacids
 from AminoExtract.writer import write_aa_file
 
 
@@ -59,7 +59,7 @@ def main() -> None:
     sys.exit(1) if empty_dataframe(GFF_Obj.df, args.feature_type) else None
     SeqRecords = filter_sequences(GFF_Obj, fasta_records)
 
-    AA_dict = Extract_AminoAcids(
+    AA_dict = extract_aminoacids(
         GFFobj=GFF_Obj, SeqRecords=SeqRecords, keep_gaps=args.keep_gaps, verbose=True
     )
 
