@@ -62,8 +62,8 @@ def check_file_ext(
 
     """
     if fname is not None and os.path.isfile(fname):
-        file_exts = "".join(pathlib.Path(fname).suffixes)
-        if choices is not None and file_exts not in choices:
+        ext = "".join(pathlib.Path(fname).suffixes)
+        if not any(ext.endswith(c) for c in choices):
             log.error(
                 f"{fname} does not have a valid {ftype} file extension.\nPlease use any of the following extensions: [bold]{' '.join(choices)}[/bold]"
             )
