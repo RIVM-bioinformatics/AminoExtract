@@ -23,7 +23,7 @@ setup(
     long_description_content_type="text/markdown",
     python_requires=">=3.10",
     packages=find_packages(),
-    install_requires=["biopython", "pandas", "rich", "python-magic"],
+    install_requires=["biopython>=1.79", "pandas", "rich==13.*", "python-magic==0.4.*"],
     entry_points={
         "console_scripts": [
             "aminoextract = AminoExtract.__main__:main",
