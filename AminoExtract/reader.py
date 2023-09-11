@@ -23,7 +23,7 @@ class GffDataFrame(object):
             ) if verbose else None
             self._read()
             self._read_header()
-            self.df = self._split_attributes_column() if split_attributes else self.df
+            self.df = _split_attributes_column(self.df) if split_attributes else self.df
         else:
             self.log = log
             self.verbose = verbose
@@ -32,24 +32,24 @@ class GffDataFrame(object):
             ) if self.verbose else None
             sys.exit(1)
 
-    def split_attributes_column(self) -> pd.DataFrame:
-        """Takes a dataframe with a column called "attributes" that contains a string of attributes, and it
-        returns a dataframe with the attributes split into separate columns
+    # def split_attributes_column(self) -> pd.DataFrame:
+    #     """Takes a dataframe with a column called "attributes" that contains a string of attributes, and it
+    #     returns a dataframe with the attributes split into separate columns
 
-        Parameters
-        ----------
-        df : pd.DataFrame
+    #     Parameters
+    #     ----------
+    #     df : pd.DataFrame
 
-        Returns
-        -------
-            A dataframe with the attributes column split into individual columns.
+    #     Returns
+    #     -------
+    #         A dataframe with the attributes column split into individual columns.
 
-        """
-        self.df["attributes"] = self.df["attributes"].apply(_attr_string_to_dict)
-        df = self.df.join(pd.DataFrame(self.df["attributes"].to_dict()).T).drop(
-            "attributes", axis=1
-        )
-        return df
+    #     """
+    #     self.df["attributes"] = self.df["attributes"].apply(_attr_string_to_dict)
+    #     df = self.df.join(pd.DataFrame(self.df["attributes"].to_dict()).T).drop(
+    #         "attributes", axis=1
+    #     )
+    #     return df
 
     def _read(self) -> pd.DataFrame:
         if _is_gzipped(self.inputfile):
@@ -98,31 +98,6 @@ class GffDataFrame(object):
         )
         return self.df
 
-    def _split_attributes_column(self) -> pd.DataFrame:
-            """
-            Takes a dataframe with a column called "attributes" that contains a string of attributes, and it
-            returns a dataframe with the attributes split into separate columns.
-
-            Parameters
-            ----------
-            None
-
-            Returns
-            -------
-            pd.DataFrame
-                A dataframe with the attributes column split into individual columns.
-            """
-            self.df["attributes"] = self.df["attributes"].apply(_attr_string_to_dict)
-            columns = self.df.columns.tolist()
-            # remove key-value pair from the dictionary in the attributes column if the key is already a column
-            self.df["attributes"] = self.df["attributes"].apply(
-                lambda attr: {k: v for k, v in attr.items() if k not in columns}
-            )
-            self.df = self.df.join(pd.DataFrame(self.df["attributes"].to_dict()).T).drop(
-                "attributes", axis=1
-            )
-            return self.df
-
     def _read_header(self):
         self.header = ""
         if _is_gzipped(self.inputfile):
@@ -141,6 +116,30 @@ class GffDataFrame(object):
                         break
         return self.header
 
+def _split_attributes_column(df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Takes a dataframe with a column called "attributes" that contains a string of attributes, and it
+        returns a dataframe with the attributes split into separate columns.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe with the attributes column split into individual columns.
+        """
+        df["attributes"] = df["attributes"].apply(_attr_string_to_dict)
+        columns = df.columns.tolist()
+        # remove key-value pair from the dictionary in the attributes column if the key is already a column
+        df["attributes"] = df["attributes"].apply(
+            lambda attr: {k: v for k, v in attr.items() if k not in columns}
+        )
+        df = df.join(pd.DataFrame(df["attributes"].to_dict()).T).drop(
+            "attributes", axis=1
+        )
+        return df
 
 def _attr_string_to_dict(string: str) -> dict:
     """
