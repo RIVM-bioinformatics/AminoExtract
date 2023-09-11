@@ -11,7 +11,7 @@ from AminoExtract.functions import log
 # It reads in a GFF file and stores its contents as a GFFdataframe object
 class GffDataFrame(object):
     def __init__(
-        self, logger=log, inputfile: str | None = None, verbose: bool = False
+        self, logger=log, inputfile: str | None = None, verbose: bool = False, split_attributes: bool = False
     ) -> None:
         None if inputfile else sys.exit("Inputfile is not provided")
         if readable_file_type(inputfile):
@@ -23,6 +23,7 @@ class GffDataFrame(object):
             ) if verbose else None
             self._read()
             self._read_header()
+            self.df = self._split_attributes_column() if split_attributes else self.df
         else:
             self.log = log
             self.verbose = verbose
@@ -75,7 +76,6 @@ class GffDataFrame(object):
             compression="gzip",
             keep_default_na=False,
         )
-        self.df = self._split_attributes_column()
         return self.df
 
     def _read_gff_uncompressed(self) -> pd.DataFrame:
@@ -96,7 +96,6 @@ class GffDataFrame(object):
             ],
             keep_default_na=False,
         )
-        self.df = self._split_attributes_column()
         return self.df
 
     def _split_attributes_column(self) -> pd.DataFrame:
@@ -192,22 +191,25 @@ def readable_file_type(infile: str) -> bool:
     )
 
 
-def read_gff(file: str, verbose: bool = False) -> GffDataFrame:
-    """Reads a GFF file and returns a GFFdataframe object
+def read_gff(file: str, verbose: bool = False, split_attributes: bool = False) -> GffDataFrame:
+    """
+    Reads a GFF file and returns a GffDataFrame object.
 
     Parameters
     ----------
     file : str
-        str
+        The path to the GFF file to be read.
     verbose : bool, optional
         If True, print out the number of lines read in.
+    split_attributes : bool, optional
+        If True, split the attributes column into separate columns.
 
     Returns
     -------
-        A GffDataFrame object.
-
+    GffDataFrame
+        A GffDataFrame object containing the data from the GFF file.
     """
-    return GffDataFrame(inputfile=file, verbose=verbose)
+    return GffDataFrame(inputfile=file, verbose=verbose, split_attributes=split_attributes)
 
 
 def read_fasta(file: str, verbose: bool = False) -> list:
