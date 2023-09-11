@@ -8,5 +8,5 @@ __version__ = "0.2.1"
 with contextlib.suppress(ImportError):
     from AminoExtract.__main__ import get_feature_name_attribute, main
     from AminoExtract.filter import filter_gff
-    from AminoExtract.reader import GffDataFrame, read_gff
+    from AminoExtract.reader import GffDataFrame, read_gff, read_fasta
     from AminoExtract.sequences import extract_aminoacids
