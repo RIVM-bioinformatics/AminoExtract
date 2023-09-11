@@ -1,7 +1,7 @@
 from Bio.Seq import Seq
 
 from AminoExtract.functions import log
-from AminoExtract.reader import GffDataFrame
+from AminoExtract.reader import GffDataFrame, _split_attributes_column
 
 
 def Reverse_complement(seq: str) -> Seq:
@@ -21,7 +21,7 @@ def Reverse_complement(seq: str) -> Seq:
     return seq_obj.reverse_complement()  # type: ignore as BioPythons seq object is weird with typehints
 
 
-def Extract_AminoAcids(
+def extract_aminoacids(
     GFFobj: GffDataFrame,
     SeqRecords: list,
     keep_gaps: bool = False,
@@ -59,8 +59,12 @@ def Extract_AminoAcids(
     # create an empty dictionary
     AA_dict = {record.id: {} for record in SeqRecords}
 
+    tempdf = GFFobj.df.copy()
+    if "attributes" in tempdf.columns:
+        tempdf = _split_attributes_column(df=tempdf)
+
     # iterate through the dataframe
-    for row in GFFobj.df.itertuples():
+    for row in tempdf.itertuples():
         try:
             name = row.Name
         except AttributeError:

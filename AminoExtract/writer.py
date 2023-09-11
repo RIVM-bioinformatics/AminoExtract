@@ -31,6 +31,7 @@ def write_aa_file(
 
     log.info(f"{'='*20} Writing output(s) {'='*20}")
     if outtype == 0:
+        # this should probably be changed so a user can specify the fasta header per record instead of assuming {name}.{feature}
         with open(output, "w") as out:
             for SeqID, features in AA_dict.items():
                 for feature, aa in features.items():
@@ -46,5 +47,5 @@ def write_aa_file(
                 log.info(
                     f"Writing '[cyan]{SeqID} - {feature}[/cyan]' to file \"[green]{output / f'{name}_{feature}.faa'}[/green]\""
                 )
-                with open(output / f"{name}_{feature}.faa", "w") as out:
+                with open(output / f"{name}_{feature}.faa", "a") as out:
                     out.write(f">{SeqID}.{feature}\n{aa}\n")
