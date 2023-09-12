@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/RIVM-bioinformatics/AminoExtract/compare/v0.3.0...v0.3.1) (2023-09-12)
+
+
+### Bug Fixes
+
+* add the split_attributes keyword to the exposed `get_feature_name_attribute()` function ([f1f6ab7](https://github.com/RIVM-bioinformatics/AminoExtract/commit/f1f6ab704c2304a83c2a4087516563c21be21a0f))
+
 ## [0.3.0](https://github.com/RIVM-bioinformatics/AminoExtract/compare/v0.2.1...v0.3.0) (2023-09-11)
 
 
