@@ -123,18 +123,18 @@ class GffDataFrame(object):
 
 def _split_attributes_column(df: pd.DataFrame) -> pd.DataFrame:
     """
-        Takes a dataframe with a column called "attributes" that contains a string of attributes, and it
-        returns a dataframe with the attributes split into separate columns.
+    Takes a dataframe with a column called "attributes" that contains a string of attributes, and it
+    returns a dataframe with the attributes split into separate columns.
 
-        Parameters
-        ----------
-        None
+    Parameters
+    ----------
+    None
 
-        Returns
-        -------
-        pd.DataFrame
-            A dataframe with the attributes column split into individual columns.
-        """
+    Returns
+    -------
+    pd.DataFrame
+        A dataframe with the attributes column split into individual columns.
+    """
     df["attributes"] = df["attributes"].apply(_attr_string_to_dict)
     columns = df.columns.tolist()
     # remove key-value pair from the dictionary in the attributes column if the key is already a column
