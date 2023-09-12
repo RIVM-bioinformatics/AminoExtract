@@ -34,7 +34,7 @@ def get_feature_name_attribute(
             A dictionary with the sequence id as the key and a list of the feature names as the value.
 
     """
-    gff = read_gff(file=input_gff, verbose=False)
+    gff = read_gff(file=input_gff, verbose=False, split_attributes=True)
     seq = read_fasta(input_seq)
     gff_records = filter_gff(GffRecords=gff, SeqRecords=seq, feature_type=feature_type)
     FiltSequences = filter_sequences(gff, seq)

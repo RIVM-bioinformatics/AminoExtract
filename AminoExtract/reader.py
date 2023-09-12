@@ -11,7 +11,11 @@ from AminoExtract.functions import log
 # It reads in a GFF file and stores its contents as a GFFdataframe object
 class GffDataFrame(object):
     def __init__(
-        self, logger=log, inputfile: str | None = None, verbose: bool = False, split_attributes: bool = False
+        self,
+        logger=log,
+        inputfile: str | None = None,
+        verbose: bool = False,
+        split_attributes: bool = False,
     ) -> None:
         None if inputfile else sys.exit("Inputfile is not provided")
         if readable_file_type(inputfile):
@@ -116,30 +120,30 @@ class GffDataFrame(object):
                         break
         return self.header
 
+
 def _split_attributes_column(df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Takes a dataframe with a column called "attributes" that contains a string of attributes, and it
-        returns a dataframe with the attributes split into separate columns.
+    """
+    Takes a dataframe with a column called "attributes" that contains a string of attributes, and it
+    returns a dataframe with the attributes split into separate columns.
 
-        Parameters
-        ----------
-        None
+    Parameters
+    ----------
+    None
 
-        Returns
-        -------
-        pd.DataFrame
-            A dataframe with the attributes column split into individual columns.
-        """
-        df["attributes"] = df["attributes"].apply(_attr_string_to_dict)
-        columns = df.columns.tolist()
-        # remove key-value pair from the dictionary in the attributes column if the key is already a column
-        df["attributes"] = df["attributes"].apply(
-            lambda attr: {k: v for k, v in attr.items() if k not in columns}
-        )
-        df = df.join(pd.DataFrame(df["attributes"].to_dict()).T).drop(
-            "attributes", axis=1
-        )
-        return df
+    Returns
+    -------
+    pd.DataFrame
+        A dataframe with the attributes column split into individual columns.
+    """
+    df["attributes"] = df["attributes"].apply(_attr_string_to_dict)
+    columns = df.columns.tolist()
+    # remove key-value pair from the dictionary in the attributes column if the key is already a column
+    df["attributes"] = df["attributes"].apply(
+        lambda attr: {k: v for k, v in attr.items() if k not in columns}
+    )
+    df = df.join(pd.DataFrame(df["attributes"].to_dict()).T).drop("attributes", axis=1)
+    return df
+
 
 def _attr_string_to_dict(string: str) -> dict:
     """
@@ -195,7 +199,9 @@ def readable_file_type(infile: str) -> bool:
     )
 
 
-def read_gff(file: str, verbose: bool = False, split_attributes: bool = False) -> GffDataFrame:
+def read_gff(
+    file: str, verbose: bool = False, split_attributes: bool = False
+) -> GffDataFrame:
     """
     Reads a GFF file and returns a GffDataFrame object.
 
@@ -213,7 +219,9 @@ def read_gff(file: str, verbose: bool = False, split_attributes: bool = False) -
     GffDataFrame
         A GffDataFrame object containing the data from the GFF file.
     """
-    return GffDataFrame(inputfile=file, verbose=verbose, split_attributes=split_attributes)
+    return GffDataFrame(
+        inputfile=file, verbose=verbose, split_attributes=split_attributes
+    )
 
 
 def read_fasta(file: str, verbose: bool = False) -> list:
