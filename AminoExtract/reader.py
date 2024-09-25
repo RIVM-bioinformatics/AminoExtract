@@ -77,6 +77,17 @@ class GffDataFrame(object):
                 "phase",
                 "attributes",
             ],
+            dtype={
+                "seqid": str,
+                "source": str,
+                "type": str,
+                "start": int,
+                "end": int,
+                "score": object,
+                "strand": str,
+                "phase": str,
+                "attributes": str,
+            },
             compression="gzip",
             keep_default_na=False,
         )
@@ -98,6 +109,17 @@ class GffDataFrame(object):
                 "phase",
                 "attributes",
             ],
+            dtype={
+                "seqid": str,
+                "source": str,
+                "type": str,
+                "start": int,
+                "end": int,
+                "score": object,
+                "strand": str,
+                "phase": str,
+                "attributes": str,
+            },
             keep_default_na=False,
         )
         return self.df
