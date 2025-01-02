@@ -1,4 +1,5 @@
 import gzip
+import re
 import sys
 
 import magic
@@ -28,6 +29,7 @@ class GffDataFrame(object):
                 else None
             )
             self._read()
+            self._normalize_attributes()
             self._read_header()
             self.df = _split_attributes_column(self.df) if split_attributes else self.df
         else:
@@ -64,6 +66,32 @@ class GffDataFrame(object):
             return self._read_gff_gzipped()
         else:
             return self._read_gff_uncompressed()
+
+    def _normalize_attributes(self) -> None:
+        """
+        Normalize the attributes in the GFF data frame.
+
+        This function processes the 'attributes' column of the data frame,
+        ensuring that any attribute containing the word 'name' is normalized
+        to 'Name'.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+
+        def _normalize(attr: str) -> str:
+            r"""
+            \b is a word boundary, so seperates non-word characters from word characters
+            \w* matches any amount of word characters
+            """
+            return re.sub(r"\b\w*name\w*\b", "Name", attr, flags=re.IGNORECASE)
+
+        self.df["attributes"] = self.df["attributes"].apply(_normalize)
 
     def _read_gff_gzipped(self) -> pd.DataFrame:
         self.df = pd.read_csv(
