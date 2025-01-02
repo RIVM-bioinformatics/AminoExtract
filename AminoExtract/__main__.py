@@ -44,8 +44,11 @@ def get_feature_name_attribute(
     return SeqAttributes
 
 
-def main() -> None:
-    args = validate_args(sys.argv[1:])
+def main(provided_args: list[str] | None = None) -> None:
+    if provided_args:
+        args = validate_args(provided_args)
+    else:
+        args = validate_args(sys.argv[1:])
 
     GFF_Obj = read_gff(file=args.features, verbose=True)
     fasta_records = read_fasta(args.input, verbose=True)

@@ -22,18 +22,22 @@ class GffDataFrame(object):
             self.inputfile = inputfile
             self.log = logger
             self.verbose = verbose
-            self.log.info(
-                f"Parsing GFF input file: '[green]{inputfile}[/green]'"
-            ) if verbose else None
+            (
+                self.log.info(f"Parsing GFF input file: '[green]{inputfile}[/green]'")
+                if verbose
+                else None
+            )
             self._read()
             self._read_header()
             self.df = _split_attributes_column(self.df) if split_attributes else self.df
         else:
             self.log = log
             self.verbose = verbose
-            self.log.error(
-                f"Input file is not readable: {inputfile}"
-            ) if self.verbose else None
+            (
+                self.log.error(f"Input file is not readable: {inputfile}")
+                if self.verbose
+                else None
+            )
             sys.exit(1)
 
     # def split_attributes_column(self) -> pd.DataFrame:
@@ -159,7 +163,19 @@ def _attr_string_to_dict(string: str) -> dict:
     dict
         A dictionary with the key being the attribute name and the value being the attribute value.
     """
-    return dict([x.split("=") for x in string.split(";") if "=" in x])
+
+    def _splitter(string: str, key: str) -> list[str]:
+        return string.replace('"', "").replace("'", "").split(key)
+
+    res_list = []
+    for x in string.split(";"):
+        if "=" in x:
+            res_list.append(_splitter(x, "="))
+        elif " " in x:
+            res_list.append(_splitter(x, " "))
+        else:
+            raise ValueError("Attributes are not separated by '=' or ' '")
+    return dict(res_list)
 
 
 def _is_gzipped(infile: str) -> bool:
