@@ -64,8 +64,6 @@ def extract_aminoacids(
     AA_dict = {record.id: {} for record in SeqRecords}
 
     tempdf = GFFobj.df.copy()
-    if "attributes" in tempdf.columns:
-        tempdf = _split_attributes_column(df=tempdf)
 
     # iterate through the dataframe
     for row in tempdf.itertuples():
@@ -87,27 +85,44 @@ def extract_aminoacids(
         # get the start and end positions from the row
         # subtract 1 from the start position to account for 0-based indexing
         # end position is also 0-based but we don't need to subtract 1 because of the way python slices function
-        start, end = row.start - 1, row.end
+        if GFFobj.splicing_table is None:
+            start, end = row.start - 1, row.end
 
-        # get the nucleotide sequence from the sequence dictionary
-        NucSequence = SeqDict[seq_id]
+            # get the nucleotide sequence from the sequence dictionary
+            NucSequence = SeqDict[seq_id]
 
-        # get the sequence slice from the start to the end position
-        seq_slice = (
-            NucSequence[start:end].replace("-", "N")
-            if keep_gaps
-            else NucSequence[start:end].replace("-", "")
-        )
+            # get the sequence slice from the start to the end position
+            full_seq = (
+                NucSequence[start:end].replace("-", "N")
+                if keep_gaps
+                else NucSequence[start:end].replace("-", "")
+            )
+        else:
+            splicing_info = GFFobj.splicing_table.loc[row.ID]
+            exon_count = len(splicing_info.CDSes)
+            full_seq = ""
+            for i in range(exon_count):
+                start, end = splicing_info.CDSes[i]
+                if i == 0:
+                    start = start - 1
+
+                NucSequence = SeqDict[seq_id]
+                seq_part = (
+                    NucSequence[start:end].replace("-", "N")
+                    if keep_gaps
+                    else NucSequence[start:end].replace("-", "")
+                )
+                full_seq += seq_part
 
         # convert the sequence slice to a string
-        seq_slice_str = str(seq_slice)
+        full_seq_str = str(full_seq)
 
         # reverse complement the sequence slice if the strand is negative
         if row.strand == "-":
-            seq_slice_str = Reverse_complement(seq_slice_str)
+            full_seq_str = Reverse_complement(full_seq_str)
 
         # create a Seq object from the sequence slice
-        seq_slice_obj = Seq(seq_slice_str)
+        seq_slice_obj = Seq(full_seq_str)
 
         # translate the sequence slice to amino acids
         AASequence = seq_slice_obj.translate(to_stop=True)

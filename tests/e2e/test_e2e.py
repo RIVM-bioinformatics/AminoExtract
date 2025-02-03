@@ -20,29 +20,31 @@ def _compare_outputs(output_file: str, expected_output_file: str) -> None:
         output_lines = _order_fasta_by_name(output_lines)
         expected_output_lines = _order_fasta_by_name(expected_output_lines)
         for line1, line2 in zip(output_lines, expected_output_lines):
+            line1 = line1.strip()
+            line2 = line2.strip()
             if line1 != line2:
                 raise AssertionError(f"Output: {line1}, Expected Output: {line2}")
 
 
 class TestE2E:
-    # def test_e2e_simple(self):
-    #     if os.path.exists("tests/data/e2e/simple_output.fa"):
-    #         os.remove("tests/data/e2e/simple_output.fa")
-    #     args = [
-    #         "-i",
-    #         "tests/data/e2e/simple_input.fa",
-    #         "-gff",
-    #         "tests/data/e2e/simple_input.gff",
-    #         "-o",
-    #         "tests/data/e2e/simple_output.fa",
-    #         "-n",
-    #         "simple_output",
-    #     ]
-    #     main(args)
-    #     assert os.path.exists("tests/data/e2e/simple_output.fa")
-    #     _compare_outputs(
-    #         "tests/data/e2e/simple_output.fa", "tests/data/e2e/simple_output.faa"
-    #     )
+    def test_e2e_simple(self):
+        if os.path.exists("tests/data/e2e/simple_output.fa"):
+            os.remove("tests/data/e2e/simple_output.fa")
+        args = [
+            "-i",
+            "tests/data/e2e/simple_input.fa",
+            "-gff",
+            "tests/data/e2e/simple_input.gff",
+            "-o",
+            "tests/data/e2e/simple_output.fa",
+            "-n",
+            "simple_output",
+        ]
+        main(args)
+        assert os.path.exists("tests/data/e2e/simple_output.fa")
+        _compare_outputs(
+            "tests/data/e2e/simple_output.fa", "tests/data/e2e/simple_output.faa"
+        )
 
     def test_e2e_complex(self):
         if os.path.exists("tests/data/e2e/complex_output.fa"):

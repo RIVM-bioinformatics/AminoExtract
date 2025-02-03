@@ -63,12 +63,37 @@ def filter_gff(
 
     """
     Sequence_IDs = [record.id for record in SeqRecords]
-    log.info(
-        f"Filtering GFF records to only contain the following information:\n * Feature type: '[green]{feature_type}[/green]'\n * Sequence IDs: '[green]{', '.join(Sequence_IDs)}[/green]'"
-    ) if verbose else None
-    GffRecords.df = filter_feature_type(
+    (
+        log.info(
+            f"Filtering GFF records to only contain the following information:\n * Feature type: '[green]{feature_type}[/green]'\n * Sequence IDs: '[green]{', '.join(Sequence_IDs)}[/green]'"
+        )
+        if verbose
+        else None
+    )
+    if feature_type == "all":
+        GffRecords.df = filter_name(GffRecords.df, Sequence_IDs)
+        return GffRecords
+
+    filtered_df = filter_feature_type(
         filter_name(GffRecords.df, Sequence_IDs), feature_type
     )
+    GffRecords.df = filtered_df
+
+    if not "Parent" in GffRecords.df.columns:
+        return GffRecords
+
+    # if there is a "Parent" column, the genes are spliced
+    splicing_table = filtered_df.groupby("ID").agg(tuple)
+    assert (
+        splicing_table["start"].apply(len).eq(splicing_table["end"].apply(len)).all()
+    ), "There should be an equal amount coding start locations as coding end locations"  # santity check
+
+    splicing_table["CDSes"] = splicing_table.apply(
+        lambda x: list(zip(x["start"], x["end"])), axis=1
+    )
+    splicing_table["Parent"] = splicing_table["Parent"].apply(lambda x: set(x))
+    splicing_table = splicing_table[["CDSes", "Parent"]]
+    GffRecords.splicing_table = splicing_table
     return GffRecords
 
 

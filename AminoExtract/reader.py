@@ -16,9 +16,12 @@ class GffDataFrame(object):
         logger=log,
         inputfile: str | None = None,
         verbose: bool = False,
-        split_attributes: bool = False,
     ) -> None:
         None if inputfile else sys.exit("Inputfile is not provided")
+        self.df: pd.DataFrame = None
+        self.dependency_graph: dict[str, set[str | float]] | None = None
+        self.splicing_table: pd.DataFrame = None
+
         if readable_file_type(inputfile):
             self.inputfile = inputfile
             self.log = logger
@@ -31,7 +34,9 @@ class GffDataFrame(object):
             self._read()
             self._normalize_attributes()
             self._read_header()
-            self.df = _split_attributes_column(self.df) if split_attributes else self.df
+            self.df = _split_attributes_column(self.df)
+            self.dependency_graph = self._create_dependency_graph(self.df)
+            self.splicing_table: pd.DataFrame = None
         else:
             self.log = log
             self.verbose = verbose
@@ -174,6 +179,18 @@ class GffDataFrame(object):
                         break
         return self.header
 
+    def _create_dependency_graph(
+        self, df: pd.DataFrame
+    ) -> dict[str, set[str | float]] | None:  # nan is a float
+        """
+        This function creates a depency graph from a GFF dataframe.
+        It uses the 'Parent' and 'ID' columns to create the graph.
+        Does not iterate over the dataframe, so it is fast.
+        """
+        if "Parent" not in df.columns or "ID" not in df.columns:
+            return None
+        return df.groupby("ID")["Parent"].agg(set).to_dict()
+
 
 def _split_attributes_column(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -265,9 +282,7 @@ def readable_file_type(infile: str) -> bool:
     )
 
 
-def read_gff(
-    file: str, verbose: bool = False, split_attributes: bool = False
-) -> GffDataFrame:
+def read_gff(file: str, verbose: bool = False) -> GffDataFrame:
     """
     Reads a GFF file and returns a GffDataFrame object.
 
@@ -285,9 +300,7 @@ def read_gff(
     GffDataFrame
         A GffDataFrame object containing the data from the GFF file.
     """
-    return GffDataFrame(
-        inputfile=file, verbose=verbose, split_attributes=split_attributes
-    )
+    return GffDataFrame(inputfile=file, verbose=verbose)
 
 
 def read_fasta(file: str, verbose: bool = False) -> list:
