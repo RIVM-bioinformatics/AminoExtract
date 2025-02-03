@@ -1,0 +1,29 @@
+def generate_random_sequence(length: int, no_stop_codons=False) -> str:
+    import random
+
+    seq = "".join(random.choices("ATGC", k=length))
+
+    if not no_stop_codons:
+        return seq
+
+    stop_codons = ["TAA", "TAG", "TGA"]
+
+    def _detector(seq):
+        for stop_codon in stop_codons:
+            if stop_codon in seq:
+                return True
+        return False
+
+    def _replacer(seq):
+        for stop_codon in stop_codons:
+            seq = seq.replace(stop_codon, "".join(random.choices("ATGC", k=3)))
+        return seq
+
+    while _detector(seq):
+        seq = _replacer(seq)
+
+    return seq
+
+
+if __name__ == "__main__":
+    print(generate_random_sequence(10_000, True))
