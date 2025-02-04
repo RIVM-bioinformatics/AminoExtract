@@ -1,6 +1,10 @@
+import gzip
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Any
+
+from AminoExtract.file_utils import FileUtils
 
 
 @dataclass(frozen=True)
@@ -8,6 +12,25 @@ class GFFColumn:
     index: int
     name: str
     dtype: Any
+
+
+@dataclass
+class GFFHeader:
+    raw_text: str
+
+    @classmethod
+    def from_file(cls, file_path: Path) -> "GFFHeader":
+        header_lines = []
+        with cls._open_file(file_path) as f:
+            for line in f:
+                if not line.startswith("#"):
+                    break
+                header_lines.append(line)
+        return cls("".join(header_lines))
+
+    @staticmethod
+    def _open_file(path: Path):
+        return gzip.open(path, "rt") if FileUtils.is_gzipped(path) else open(path)
 
 
 class GFFColumns(Enum):
