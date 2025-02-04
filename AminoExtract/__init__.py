@@ -30,6 +30,6 @@ __version__ = "0.3.1"
 # This may occur when this file is imported in setup.py as dependencies are not yet installed
 with contextlib.suppress(ImportError):
     from AminoExtract.__main__ import get_feature_name_attribute, main
-    from AminoExtract.filter import filter_gff
-    from AminoExtract.reader import GffDataFrame, read_fasta, read_gff
+    from AminoExtract.filter import GFFRecordFilter
+    from AminoExtract.reader import GffDataFrame
     from AminoExtract.sequences import extract_aminoacids

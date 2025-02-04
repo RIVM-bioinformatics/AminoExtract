@@ -1,127 +1,111 @@
+from dataclasses import dataclass
+
 import pandas as pd
+from Bio.SeqRecord import SeqRecord
 
 from AminoExtract.functions import log
 from AminoExtract.reader import GffDataFrame
 
-
-def filter_name(frame: pd.DataFrame, Sequence_IDs: list) -> pd.DataFrame:
-    """Takes a dataframe and a list of Biopythons SeqRecord objects, and returns a dataframe with only the rows that
-    match the sequence IDs within the SeqRecord objects
-
-    Parameters
-    ----------
-    frame : pd.DataFrame
-        the dataframe you want to filter
-    seq_ids : list
-        a list of SeqRecord objects
-
-    Returns
-    -------
-        A dataframe with the rows that have the seqids in the fasta_ids list.
-
-    """
-    return frame[frame["seqid"].isin(Sequence_IDs)]
+# methods:
+# validate_dataframe, filter_gff, filter_sequences
 
 
-def filter_feature_type(frame: pd.DataFrame, feature_type: str) -> pd.DataFrame:
-    """Return a new dataframe containing only the rows of the input dataframe that have the specified
-    feature type.
+@dataclass
+class SplicingInfo:
+    """Represents the splicing information of a gene"""
 
-    Parameters
-    ----------
-    frame : pd.DataFrame
-        the dataframe to filter
-    feature_type : str
-        The type of feature you want to filter for.
-
-    Returns
-    -------
-        A dataframe with only the rows that containing the specified feature type.
-
-    """
-    # keep all rows if feature_type is "all"
-    return frame if feature_type == "all" else frame[frame["type"] == feature_type]
+    cds_locations: list[tuple[int, int]]
+    parent_ids: set[str]
 
 
-def filter_gff(
-    gff_records: GffDataFrame,
-    seq_records: list,
-    feature_type: str,
-    verbose: bool = False,
-) -> GffDataFrame:
-    """Filter the GFF dataframe by feature type and sequence name
+class GFFFilter:
+    def __init__(self, df: pd.DataFrame, verbose: bool = False):
+        self.df = df
+        self.verbose = verbose
 
-    Parameters
-    ----------
-    GffRecords : GffDataFrame object
-        GffDataFrame
-    SeqRecords : list
-        list of SeqRecord objects
-    feature_type : str
-        str
+    def filter_by_seqids(self, seq_ids: list[str]) -> pd.DataFrame:
+        return self.df[self.df["seqid"].isin(seq_ids)]
 
-    Returns
-    -------
-        A GffDataFrame object.
+    def filter_by_feature_type(self, feature_type: str) -> pd.DataFrame:
+        if feature_type == "all":
+            return self.df
+        return self.df[self.df["type"] == feature_type]
 
-    """
-    Sequence_IDs = [record.id for record in seq_records]
-    if verbose:
-        log.info(
-            f"Filtering GFF records to only contain the following information:\n * Feature type: '[green]{feature_type}[/green]'\n * Sequence IDs: '[green]{', '.join(Sequence_IDs)}[/green]'"
+    def get_splicing_info(self, filtered_df: pd.DataFrame) -> pd.DataFrame | None:
+        """Get splicing information from a filtered dataframe. Attributes are assumed to be parsed."""
+        if "Parent" not in filtered_df.columns:
+            return None
+
+        splicing = filtered_df.groupby("ID").agg(
+            {"start": tuple, "end": tuple, "Parent": set}
         )
-    if feature_type == "all":
-        gff_records.df = filter_name(gff_records.df, Sequence_IDs)
-        return gff_records
 
-    filtered_df = filter_feature_type(
-        filter_name(gff_records.df, Sequence_IDs), feature_type
-    )
-    gff_records.df = filtered_df
+        start_lengths = splicing["start"].apply(len)
+        end_lengths = splicing["end"].apply(len)
+        if not start_lengths.eq(end_lengths).all():  # sanity check
+            raise ValueError(
+                "There should be an equal amount coding start locations as coding end locations"
+            )
 
-    if not "Parent" in gff_records.df.columns:
-        return gff_records
-
-    # if there is a "Parent" column, the genes are spliced
-    splicing_table = filtered_df.groupby("ID").agg(tuple)
-    assert (
-        splicing_table["start"].apply(len).eq(splicing_table["end"].apply(len)).all()
-    ), "There should be an equal amount coding start locations as coding end locations"  # santity check
-
-    splicing_table["CDSes"] = splicing_table.apply(
-        lambda x: list(zip(x["start"], x["end"])), axis=1
-    )
-    splicing_table["Parent"] = splicing_table["Parent"].apply(lambda x: set(x))
-    splicing_table = splicing_table[["CDSes", "Parent"]]
-    gff_records.splicing_table = splicing_table
-    return gff_records
-
-
-def filter_sequences(gff: GffDataFrame, SeqRecords: list):
-    """Takes a GffDataFrame object and a list of SeqRecord objects, and returns a list of SeqRecord objects
-    that only contain the sequences that are specified in the GffDataFrame object.
-
-    Parameters
-    ----------
-    gff : GffDataFrame
-        The GffDataFrame object to filter
-    SeqRecords : list
-        A list of SeqRecord objects
-
-    Returns
-    -------
-        A list of SeqRecord objects that only contain the sequences that are specified in the GffDataFrame object.
-
-    """
-    return [record for record in SeqRecords if record.id in gff.df["seqid"].tolist()]
-
-
-def empty_dataframe(
-    frame: pd.DataFrame = pd.DataFrame(), feature_type: str | None = None
-) -> bool:
-    if frame.empty or feature_type is None:
-        log.warning(
-            f"The GFF file is empty after filtering.\nThis might mean that there are no records within the GFF that match the sequence ID(s) in the given Fasta file.\nThis could also mean that there are no records within the GFF that match the feature type '[cyan]{feature_type}[/cyan]'.\nPlease check your inputs and try again."
+        splicing["CDSes"] = splicing.apply(
+            lambda x: list(zip(x["start"], x["end"])), axis=1
         )
-        return True
-    return False
+        return splicing[["CDSes", "Parent"]]
+
+
+class GFFRecordFilter:
+    def __init__(self, gff_records: GffDataFrame, verbose: bool = False):
+        self.gff_records = gff_records
+        self.filter = GFFFilter(gff_records.df, verbose)
+        self.verbose = verbose
+
+    def apply_filters(
+        self, seq_records: list[SeqRecord], feature_type: str
+    ) -> GffDataFrame:
+        seq_ids = [record.id for record in seq_records if record.id is not None]
+
+        if self.verbose:
+            self._log_filtering_info(seq_ids, feature_type)
+
+        assert seq_ids, "No sequence IDs found in the given SeqRecords"
+        filtered_df = self.filter.filter_by_seqids(seq_ids)
+        filtered_df = self.filter.filter_by_feature_type(feature_type)
+
+        self.gff_records.df = filtered_df
+        self.gff_records.splicing_table = self.filter.get_splicing_info(filtered_df)
+
+        return self.gff_records
+
+    def _log_filtering_info(self, seq_ids: list[str], feature_type: str) -> None:
+        """Logging for verbose mode"""
+        log.info("Filtering GFF records:")
+        log.info(f"Feature type: {feature_type}")
+        log.info(f"Sequence IDs: {', '.join(seq_ids)}")
+
+
+class SequenceFilter:
+    def __init__(self, seq_records: list[SeqRecord], verbose: bool = False):
+        self.seq_records = seq_records
+        self.verbose = verbose
+
+    def filter_sequences(self, gff: GffDataFrame) -> list[SeqRecord]:
+        """Takes a GffDataFrame object and a list of SeqRecord objects, and returns a list of SeqRecord objects
+        that only contain the sequences that are specified in the GffDataFrame object.
+
+        Parameters
+        ----------
+        gff : GffDataFrame
+            The GffDataFrame object to filter
+        SeqRecords : list
+            A list of SeqRecord objects
+
+        Returns
+        -------
+            A list of SeqRecord objects that only contain the sequences that are specified in the GffDataFrame object.
+
+        """
+
+        if gff.df is None:
+            raise ValueError("The GFF file is empty")
+        valid_ids = set(gff.df["seqid"])
+        return [record for record in self.seq_records if record.id in valid_ids]

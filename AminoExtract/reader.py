@@ -10,6 +10,8 @@ from AminoExtract.functions import log
 from AminoExtract.gff_data import GFFColumns, GFFHeader
 
 
+# Methods:
+# read_fasta, read_gff
 class AttributeParser:
     """Handles GFF attributes"""
 
@@ -116,44 +118,58 @@ class GffDataFrame(object):
 
         self.df.drop("attributes", axis=1, inplace=True)
 
-
-def read_gff(file: str, verbose: bool = False) -> GffDataFrame:
-    """
-    Reads a GFF file and returns a GffDataFrame object.
-
-    Parameters
-    ----------
-    file : str
-        The path to the GFF file to be read.
-    verbose : bool, optional
-        If True, print out the number of lines read in.
-    split_attributes : bool, optional
-        If True, split the attributes column into separate columns.
-
-    Returns
-    -------
-    GffDataFrame
-        A GffDataFrame object containing the data from the GFF file.
-    """
-    return GffDataFrame(inputfile=file, verbose=verbose)
+    def validate_dataframe(self, feature_type: str | None = None) -> bool:
+        """Returns True if the dataframe is not empty and the feature type is not None"""
+        if self.df is None or feature_type is None:
+            log.warning(
+                f"The GFF file is empty after filtering.\nThis might mean that there are no records within the GFF that match the sequence ID(s) in the given Fasta file.\nThis could also mean that there are no records within the GFF that match the feature type '[cyan]{feature_type}[/cyan]'.\nPlease check your inputs and try again."
+            )
+            return False
+        return True
 
 
-def read_fasta(file: str, verbose: bool = False) -> list:
-    """
-    Reads a FASTA file and returns a list of SeqRecord objects
+class SequenceReader:
+    """Handles reading sequence and gff files"""
 
-    Parameters
-    ----------
-    file : str
-        The path to the FASTA file to be read.
-    verbose : bool, optional
-        If True, log information about the file being parsed.
+    def __init__(self, verbose: bool = False) -> None:
+        self.verbose = verbose
 
-    Returns
-    -------
-    list
-        A list of SeqRecord objects representing the sequences in the input file.
-    """
-    if verbose:
-        log.info(f"Parsing FASTA input file: '[green]{file}[/green]'")
-    return list(SeqIO.parse(file, "fasta"))
+    def read_gff(self, file: str) -> GffDataFrame:
+        """
+        Reads a GFF file and returns a GffDataFrame object.
+
+        Parameters
+        ----------
+        file : str
+            The path to the GFF file to be read.
+        verbose : bool, optional
+            If True, print out the number of lines read in.
+        split_attributes : bool, optional
+            If True, split the attributes column into separate columns.
+
+        Returns
+        -------
+        GffDataFrame
+            A GffDataFrame object containing the data from the GFF file.
+        """
+        return GffDataFrame(inputfile=file, verbose=self.verbose)
+
+    def read_fasta(self, file: str) -> list:
+        """
+        Reads a FASTA file and returns a list of SeqRecord objects
+
+        Parameters
+        ----------
+        file : str
+            The path to the FASTA file to be read.
+        verbose : bool, optional
+            If True, log information about the file being parsed.
+
+        Returns
+        -------
+        list
+            A list of SeqRecord objects representing the sequences in the input file.
+        """
+        if self.verbose:
+            log.info(f"Parsing FASTA input file: '[green]{file}[/green]'")
+        return list(SeqIO.parse(file, "fasta"))

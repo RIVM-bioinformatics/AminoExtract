@@ -7,8 +7,8 @@ https://github.com/RIVM-bioinformatics/AminoExtract
 import sys
 
 from AminoExtract.args import validate_args
-from AminoExtract.filter import empty_dataframe, filter_gff, filter_sequences
-from AminoExtract.reader import read_fasta, read_gff
+from AminoExtract.filter import GFFRecordFilter, SequenceFilter
+from AminoExtract.reader import SequenceReader
 from AminoExtract.sequences import extract_aminoacids
 from AminoExtract.writer import write_aa_file
 
@@ -36,13 +36,17 @@ def get_feature_name_attribute(
             A dict with the sequence id as the key and a list of the feature names as the value.
 
     """
-    gff = read_gff(file=input_gff, verbose=False)
-    seq = read_fasta(input_seq)
-    gff_records = filter_gff(
-        gff_records=gff, seq_records=seq, feature_type=feature_type
-    )
-    filt_sequences = filter_sequences(gff, seq)
-    seq_attributes: dict[str, list[str]] = {record.id: [] for record in filt_sequences}
+    reader = SequenceReader(verbose=False)
+    gff = reader.read_gff(input_gff)
+    seq = reader.read_fasta(input_seq)
+
+    gff_filter = GFFRecordFilter(gff_records=gff, verbose=False)
+    gff_records = gff_filter.apply_filters(seq_records=seq, feature_type=feature_type)
+
+    seq_filter = SequenceFilter(seq_records=seq, verbose=False)
+    filtered_seqs = seq_filter.filter_sequences(gff_records)
+
+    seq_attributes: dict[str, list[str]] = {record.id: [] for record in filtered_seqs}
     for row in gff_records.df.itertuples():
         seq_attributes[row.seqid].append(row.Name)
     return seq_attributes
@@ -81,18 +85,20 @@ def main(provided_args: list[str] | None = None) -> None:
     else:
         args = validate_args(sys.argv[1:])
 
-    gff_obj = read_gff(file=args.features, verbose=True)
-    fasta_records = read_fasta(args.input, verbose=True)
+    reader = SequenceReader(verbose=args.verbose)
+    gff_obj = reader.read_gff(args.features)
+    fasta_records = reader.read_fasta(args.input)
 
-    gff_obj = filter_gff(
-        gff_records=gff_obj,
-        seq_records=fasta_records,
-        feature_type=args.feature_type,
-        verbose=True,
+    filter = GFFRecordFilter(gff_records=gff_obj, verbose=args.verbose)
+    gff_obj = filter.apply_filters(
+        seq_records=fasta_records, feature_type=args.feature_type
     )
-    if empty_dataframe(gff_obj.df, args.feature_type):
-        sys.exit(1)
-    seq_records = filter_sequences(gff_obj, fasta_records)
+    assert gff_obj.validate_dataframe(
+        args.feature_type
+    ), "Validation failed, either the GFF file is empty or the feature type is None"
+
+    seq_filter = SequenceFilter(seq_records=fasta_records, verbose=args.verbose)
+    seq_records = seq_filter.filter_sequences(gff_obj)
 
     aa_dict = extract_aminoacids(
         gff_obj=gff_obj, seq_records=seq_records, keep_gaps=args.keep_gaps, verbose=True

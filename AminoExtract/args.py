@@ -34,7 +34,7 @@ def check_features(args: argparse.Namespace) -> argparse.Namespace:
 
 def check_valid_output_filename(args: argparse.Namespace) -> argparse.Namespace:
     output_ext = pathlib.PurePath(args.output).name
-    if not re.match("^[\w\-. ]+$", output_ext) or "/." in str(args.output):
+    if not re.match(r"^[\w\-. ]+$", output_ext) or "/." in str(args.output):
         log.error(
             f"'[red]{output_ext}[/red]' does not seem to be a valid filename.\nPlease use only alphanumeric characters, underscores, and dashes."
         )
@@ -89,7 +89,7 @@ def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
 
     parser = RichParser(
         prog=f"[bold]{__prog__}[/bold]",
-        usage=f"{__prog__} \[required options] \[optional options]",
+        usage=rf"{__prog__} \[required options] \[optional options]",
         description=f"[bold underline]{__prog__}[/bold underline]: A quick tool to extract amino acid sequences from a FASTA file.",
         formatter_class=QuickArgFormatter,
         add_help=False,
@@ -171,6 +171,15 @@ def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
         action="help",
         default=argparse.SUPPRESS,
         help="Show this help message and exit.",
+    )
+
+    opt_args.add_argument(
+        "--verbose",
+        "-vb",
+        action="store_true",
+        default=False,
+        help="Print out more information during the process.",
+        required=False,
     )
 
     # TODO: add extra arg for extra gff filters such as source, strand, etc.
