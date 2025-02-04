@@ -6,6 +6,7 @@ import magic
 import pandas as pd
 from Bio import SeqIO
 
+from AminoExtract.enums import GFFColumns
 from AminoExtract.functions import log
 
 
@@ -17,60 +18,32 @@ class GffDataFrame(object):
         inputfile: str | None = None,
         verbose: bool = False,
     ) -> None:
-        None if inputfile else sys.exit("Inputfile is not provided")
-        self.df: pd.DataFrame = None
-        self.dependency_graph: dict[str, set[str | float]] | None = None
-        self.splicing_table: pd.DataFrame = None
+        if not inputfile:
+            sys.exit("Inputfile is not provided")
+        self.df: pd.DataFrame
+        self.splicing_table: pd.DataFrame | None = None
 
         if readable_file_type(inputfile):
             self.inputfile = inputfile
             self.log = logger
             self.verbose = verbose
-            (
+            if verbose:
                 self.log.info(f"Parsing GFF input file: '[green]{inputfile}[/green]'")
-                if verbose
-                else None
-            )
             self._read()
             self._normalize_attributes()
             self._read_header()
             self.df = _split_attributes_column(self.df)
-            self.dependency_graph = self._create_dependency_graph(self.df)
-            self.splicing_table: pd.DataFrame = None
         else:
             self.log = log
             self.verbose = verbose
-            (
+            if self.verbose:
                 self.log.error(f"Input file is not readable: {inputfile}")
-                if self.verbose
-                else None
-            )
             sys.exit(1)
-
-    # def split_attributes_column(self) -> pd.DataFrame:
-    #     """Takes a dataframe with a column called "attributes" that contains a string of attributes, and it
-    #     returns a dataframe with the attributes split into separate columns
-
-    #     Parameters
-    #     ----------
-    #     df : pd.DataFrame
-
-    #     Returns
-    #     -------
-    #         A dataframe with the attributes column split into individual columns.
-
-    #     """
-    #     self.df["attributes"] = self.df["attributes"].apply(_attr_string_to_dict)
-    #     df = self.df.join(pd.DataFrame(self.df["attributes"].to_dict()).T).drop(
-    #         "attributes", axis=1
-    #     )
-    #     return df
 
     def _read(self) -> pd.DataFrame:
         if _is_gzipped(self.inputfile):
-            return self._read_gff_gzipped()
-        else:
-            return self._read_gff_uncompressed()
+            return self._read_gff(gzipped=True)
+        return self._read_gff(gzipped=False)
 
     def _normalize_attributes(self) -> None:
         """
@@ -98,65 +71,14 @@ class GffDataFrame(object):
 
         self.df["attributes"] = self.df["attributes"].apply(_normalize)
 
-    def _read_gff_gzipped(self) -> pd.DataFrame:
+    def _read_gff(self, gzipped: bool) -> pd.DataFrame:
         self.df = pd.read_csv(
             self.inputfile,
             sep="\t",
             comment="#",
-            names=[
-                "seqid",
-                "source",
-                "type",
-                "start",
-                "end",
-                "score",
-                "strand",
-                "phase",
-                "attributes",
-            ],
-            dtype={
-                "seqid": str,
-                "source": str,
-                "type": str,
-                "start": int,
-                "end": int,
-                "score": object,
-                "strand": str,
-                "phase": str,
-                "attributes": str,
-            },
-            compression="gzip",
-            keep_default_na=False,
-        )
-        return self.df
-
-    def _read_gff_uncompressed(self) -> pd.DataFrame:
-        self.df = pd.read_csv(
-            self.inputfile,
-            sep="\t",
-            comment="#",
-            names=[
-                "seqid",
-                "source",
-                "type",
-                "start",
-                "end",
-                "score",
-                "strand",
-                "phase",
-                "attributes",
-            ],
-            dtype={
-                "seqid": str,
-                "source": str,
-                "type": str,
-                "start": int,
-                "end": int,
-                "score": object,
-                "strand": str,
-                "phase": str,
-                "attributes": str,
-            },
+            names=GFFColumns.get_names(),
+            dtype=GFFColumns.get_dtypes(),
+            compression="gzip" if gzipped else None,
             keep_default_na=False,
         )
         return self.df
@@ -178,18 +100,6 @@ class GffDataFrame(object):
                     else:
                         break
         return self.header
-
-    def _create_dependency_graph(
-        self, df: pd.DataFrame
-    ) -> dict[str, set[str | float]] | None:  # nan is a float
-        """
-        This function creates a depency graph from a GFF dataframe.
-        It uses the 'Parent' and 'ID' columns to create the graph.
-        Does not iterate over the dataframe, so it is fast.
-        """
-        if "Parent" not in df.columns or "ID" not in df.columns:
-            return None
-        return df.groupby("ID")["Parent"].agg(set).to_dict()
 
 
 def _split_attributes_column(df: pd.DataFrame) -> pd.DataFrame:
@@ -319,5 +229,6 @@ def read_fasta(file: str, verbose: bool = False) -> list:
     list
         A list of SeqRecord objects representing the sequences in the input file.
     """
-    log.info(f"Parsing FASTA input file: '[green]{file}[/green]'") if verbose else None
+    if verbose:
+        log.info(f"Parsing FASTA input file: '[green]{file}[/green]'")
     return list(SeqIO.parse(file, "fasta"))

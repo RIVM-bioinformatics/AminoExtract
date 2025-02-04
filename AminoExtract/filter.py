@@ -44,7 +44,10 @@ def filter_feature_type(frame: pd.DataFrame, feature_type: str) -> pd.DataFrame:
 
 
 def filter_gff(
-    GffRecords: GffDataFrame, SeqRecords: list, feature_type: str, verbose: bool = False
+    gff_records: GffDataFrame,
+    seq_records: list,
+    feature_type: str,
+    verbose: bool = False,
 ) -> GffDataFrame:
     """Filter the GFF dataframe by feature type and sequence name
 
@@ -62,25 +65,22 @@ def filter_gff(
         A GffDataFrame object.
 
     """
-    Sequence_IDs = [record.id for record in SeqRecords]
-    (
+    Sequence_IDs = [record.id for record in seq_records]
+    if verbose:
         log.info(
             f"Filtering GFF records to only contain the following information:\n * Feature type: '[green]{feature_type}[/green]'\n * Sequence IDs: '[green]{', '.join(Sequence_IDs)}[/green]'"
         )
-        if verbose
-        else None
-    )
     if feature_type == "all":
-        GffRecords.df = filter_name(GffRecords.df, Sequence_IDs)
-        return GffRecords
+        gff_records.df = filter_name(gff_records.df, Sequence_IDs)
+        return gff_records
 
     filtered_df = filter_feature_type(
-        filter_name(GffRecords.df, Sequence_IDs), feature_type
+        filter_name(gff_records.df, Sequence_IDs), feature_type
     )
-    GffRecords.df = filtered_df
+    gff_records.df = filtered_df
 
-    if not "Parent" in GffRecords.df.columns:
-        return GffRecords
+    if not "Parent" in gff_records.df.columns:
+        return gff_records
 
     # if there is a "Parent" column, the genes are spliced
     splicing_table = filtered_df.groupby("ID").agg(tuple)
@@ -93,8 +93,8 @@ def filter_gff(
     )
     splicing_table["Parent"] = splicing_table["Parent"].apply(lambda x: set(x))
     splicing_table = splicing_table[["CDSes", "Parent"]]
-    GffRecords.splicing_table = splicing_table
-    return GffRecords
+    gff_records.splicing_table = splicing_table
+    return gff_records
 
 
 def filter_sequences(gff: GffDataFrame, SeqRecords: list):
@@ -120,7 +120,7 @@ def empty_dataframe(
     frame: pd.DataFrame = pd.DataFrame(), feature_type: str | None = None
 ) -> bool:
     if frame.empty or feature_type is None:
-        log.warn(
+        log.warning(
             f"The GFF file is empty after filtering.\nThis might mean that there are no records within the GFF that match the sequence ID(s) in the given Fasta file.\nThis could also mean that there are no records within the GFF that match the feature type '[cyan]{feature_type}[/cyan]'.\nPlease check your inputs and try again."
         )
         return True

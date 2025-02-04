@@ -1,6 +1,6 @@
 """
 Unit tests for the AminoExtract.sequences module, 
-specifically the Reverse_complement and extract_aminoacids functions.
+specifically the extract_aminoacids function.
 
 Classes
 -------
@@ -13,7 +13,7 @@ import logging
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
-from AminoExtract import GffDataFrame, Reverse_complement, extract_aminoacids
+from AminoExtract import GffDataFrame, extract_aminoacids
 
 
 class TestSequences:
@@ -37,22 +37,6 @@ class TestSequences:
         SeqRecord(Seq("ATC--GGAATCGGAATC-"), id="seq4"),  # with gaps
     ]
     gff_obj = GffDataFrame(inputfile="tests/data/test_sequences_module.gff")
-
-    def test_reverse_complement(self) -> None:
-        """
-        Test the Reverse_complement function.
-
-        Asserts
-        -------
-        bool
-            True if the reverse complement of the sequences is as expected.
-        """
-        assert Reverse_complement(self.mock_sequences[0].seq) == Seq("GATTCCGATTCGGAT")
-        assert Reverse_complement(self.mock_sequences[1].seq) == Seq("ATCCGAATCGGAATC")
-        assert Reverse_complement(self.mock_sequences[2].seq) == Seq("GATCTCGATCTCGAT")
-        assert Reverse_complement(self.mock_sequences[3].seq) == Seq(
-            "-GATTCCGATTCC--GAT"
-        )
 
     def test_extract_aminoacids_basic(self) -> None:
         """

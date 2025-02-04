@@ -12,7 +12,7 @@ class TestReader:
         assert gff.header == "##gff-version 3\n##sequence-region CY121680.1 1 1752\n"
         assert gff.df.shape == (2, 9)
         assert (
-            gff.df.attributes[1] == 'Name "test2"'
+            gff.df.Name[1] == "test2"
         )  # [1] has gene_name instead of name, which needs to be normalized
 
     def test_gzipped_gff(self):
@@ -21,4 +21,4 @@ class TestReader:
         assert gff.verbose == False
         assert gff.header == "##gff-version 3\n##sequence-region CY121680.1 1 1752\n"
         assert gff.df.shape == (2, 9)
-        assert gff.df.attributes[1] == 'Name "test2"'
+        assert gff.df.Name[1] == "test2"

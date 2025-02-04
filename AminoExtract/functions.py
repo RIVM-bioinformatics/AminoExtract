@@ -73,7 +73,8 @@ class FlexiFormatter(RawTextHelpFormatter):
             else:
                 paragraphs.append(line)
 
-            last_sub_indent = sub_indent if is_text else None
+            if is_text:
+                last_sub_indent = sub_indent
         return paragraphs
 
     def _para_reformat(self, text, width):
