@@ -4,18 +4,8 @@ import pandas as pd
 from Bio.SeqRecord import SeqRecord
 
 from AminoExtract.functions import log
+from AminoExtract.gff_data import SplicingInfo
 from AminoExtract.reader import GffDataFrame
-
-# methods:
-# validate_dataframe, filter_gff, filter_sequences
-
-
-@dataclass
-class SplicingInfo:
-    """Represents the splicing information of a gene"""
-
-    cds_locations: list[tuple[int, int]]
-    parent_ids: set[str]
 
 
 class GFFFilter:
@@ -31,10 +21,8 @@ class GFFFilter:
             return self.df
         return self.df[self.df["type"] == feature_type]
 
-    def get_splicing_info(self, filtered_df: pd.DataFrame) -> pd.DataFrame | None:
+    def get_splicing_info(self, filtered_df: pd.DataFrame) -> list[SplicingInfo | None]:
         """Get splicing information from a filtered dataframe. Attributes are assumed to be parsed."""
-        if "Parent" not in filtered_df.columns:
-            return None
 
         splicing = filtered_df.groupby("ID").agg(
             {"start": tuple, "end": tuple, "Parent": set}
@@ -50,7 +38,13 @@ class GFFFilter:
         splicing["CDSes"] = splicing.apply(
             lambda x: list(zip(x["start"], x["end"])), axis=1
         )
-        return splicing[["CDSes", "Parent"]]
+
+        return [
+            SplicingInfo(
+                cds_locations=row.CDSes, parent_ids=row.Parent, gene_id=row.Index
+            )
+            for row in splicing[["CDSes", "Parent"]].itertuples()
+        ]
 
 
 class GFFRecordFilter:
@@ -72,7 +66,7 @@ class GFFRecordFilter:
         filtered_df = self.filter.filter_by_feature_type(feature_type)
 
         self.gff_records.df = filtered_df
-        self.gff_records.splicing_table = self.filter.get_splicing_info(filtered_df)
+        self.gff_records.splicing_info = self.filter.get_splicing_info(filtered_df)
 
         return self.gff_records
 

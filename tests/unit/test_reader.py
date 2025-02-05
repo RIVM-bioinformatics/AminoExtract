@@ -13,7 +13,7 @@ class TestReader:
             gff.header.raw_text
             == "##gff-version 3\n##sequence-region CY121680.1 1 1752\n"
         )
-        assert gff.df.shape == (2, 9)
+        assert gff.df.shape == (2, 10)
         assert (
             gff.df.Name[1] == "test2"
         )  # [1] has gene_name instead of name, which needs to be normalized
@@ -26,5 +26,5 @@ class TestReader:
             gff.header.raw_text
             == "##gff-version 3\n##sequence-region CY121680.1 1 1752\n"
         )
-        assert gff.df.shape == (2, 9)
+        assert gff.df.shape == (2, 10)
         assert gff.df.Name[1] == "test2"

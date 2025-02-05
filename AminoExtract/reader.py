@@ -7,11 +7,9 @@ from Bio import SeqIO
 
 from AminoExtract.file_utils import FileUtils
 from AminoExtract.functions import log
-from AminoExtract.gff_data import GFFColumns, GFFHeader
+from AminoExtract.gff_data import GFFColumns, GFFHeader, SplicingInfo
 
 
-# Methods:
-# read_fasta, read_gff
 class AttributeParser:
     """Handles GFF attributes"""
 
@@ -66,7 +64,7 @@ class GffDataFrame(object):
         self.verbose = verbose
         self.header: GFFHeader | None = None
         self.df: pd.DataFrame | None = None
-        self.splicing_table: pd.DataFrame | None = None
+        self.splicing_info: list[SplicingInfo] | None = None
 
         if not self._validate_input():
             sys.exit(f"Input file is not readable: {self.file_path}")
@@ -115,6 +113,11 @@ class GffDataFrame(object):
         new_cols = [col for col in attr_df.columns if col not in existing_cols]
         if new_cols:
             self.df = pd.concat([self.df, attr_df[new_cols]], axis=1)
+
+        # I need Parent to be a column, even if it's empty
+        # This is because I use it to groupby in the GFFFilter class
+        if not "Parent" in self.df.columns:
+            self.df["Parent"] = None
 
         self.df.drop("attributes", axis=1, inplace=True)
 

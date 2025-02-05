@@ -55,3 +55,12 @@ class GFFColumns(Enum):
     @classmethod
     def get_indices(cls) -> dict[str, int]:
         return {col.value.name: col.value.index for col in cls}
+
+
+@dataclass
+class SplicingInfo:
+    """Represents the splicing information of a gene"""
+
+    cds_locations: list[tuple[int, int]]
+    parent_ids: set[str]
+    gene_id: str

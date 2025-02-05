@@ -9,7 +9,7 @@ import sys
 from AminoExtract.args import validate_args
 from AminoExtract.filter import GFFRecordFilter, SequenceFilter
 from AminoExtract.reader import SequenceReader
-from AminoExtract.sequences import extract_aminoacids
+from AminoExtract.sequences import SequenceExtractor
 from AminoExtract.writer import write_aa_file
 
 
@@ -100,8 +100,7 @@ def main(provided_args: list[str] | None = None) -> None:
     seq_filter = SequenceFilter(seq_records=fasta_records, verbose=args.verbose)
     seq_records = seq_filter.filter_sequences(gff_obj)
 
-    aa_dict = extract_aminoacids(
-        gff_obj=gff_obj, seq_records=seq_records, keep_gaps=args.keep_gaps, verbose=True
-    )
+    extractor = SequenceExtractor(keep_gaps=args.keep_gaps, verbose=args.verbose)
+    aa_dict = extractor.extract_aminoacids(gff_obj=gff_obj, seq_records=seq_records)
 
     write_aa_file(aa_dict, args.output, args.name, args.outtype)
