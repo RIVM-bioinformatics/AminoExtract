@@ -2,7 +2,7 @@ import gzip
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 
 from AminoExtract.file_utils import FileUtils
 
@@ -29,7 +29,7 @@ class GFFHeader:
         return cls("".join(header_lines))
 
     @staticmethod
-    def _open_file(path: Path):
+    def _open_file(path: Path) -> TextIO:
         return gzip.open(path, "rt") if FileUtils.is_gzipped(path) else open(path)
 
 

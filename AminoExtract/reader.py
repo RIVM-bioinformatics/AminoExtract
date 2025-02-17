@@ -7,8 +7,8 @@ import pandas as pd
 from Bio import SeqIO
 
 from AminoExtract.file_utils import FileUtils
-from AminoExtract.functions import log
 from AminoExtract.gff_data import GFFColumns, GFFHeader, SplicingInfo
+from AminoExtract.logging import log
 
 
 class AttributeParser:
@@ -53,7 +53,7 @@ class AttributeParser:
         return re.sub(r"\b\w*name\w*\b", "Name", attr, flags=re.IGNORECASE)
 
 
-class GffDataFrame(object):
+class GFFDataFrame(object):
     def __init__(
         self,
         inputfile: str | Path,
@@ -143,7 +143,7 @@ class SequenceReader:
         self.logger = logger
         self.verbose = verbose
 
-    def read_gff(self, file: Path) -> GffDataFrame:
+    def read_gff(self, file: Path) -> GFFDataFrame:
         """
         Reads a GFF file and returns a GffDataFrame object.
 
@@ -161,7 +161,7 @@ class SequenceReader:
         GffDataFrame
             A GffDataFrame object containing the data from the GFF file.
         """
-        return GffDataFrame(inputfile=file, logger=self.logger, verbose=self.verbose)
+        return GFFDataFrame(inputfile=file, logger=self.logger, verbose=self.verbose)
 
     def read_fasta(self, file: Path) -> list:
         """

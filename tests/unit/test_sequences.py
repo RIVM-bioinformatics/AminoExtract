@@ -7,9 +7,9 @@ import pytest
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
-from AminoExtract.functions import log
 from AminoExtract.gff_data import SplicingInfo
-from AminoExtract.reader import GffDataFrame
+from AminoExtract.logging import log
+from AminoExtract.reader import GFFDataFrame
 from AminoExtract.sequences import ExonData, FeatureData, SequenceExtractor
 
 
@@ -47,7 +47,7 @@ def sample_splicing_info() -> list[SplicingInfo]:
 
 
 @pytest.fixture
-def sample_gff_data() -> GffDataFrame:
+def sample_gff_data() -> GFFDataFrame:
     data = {
         "seqid": ["seq1"],
         "type": ["gene"],
@@ -59,7 +59,7 @@ def sample_gff_data() -> GffDataFrame:
         "Name": ["test_gene"],
     }
     df = pd.DataFrame(data)
-    gff = GffDataFrame.__new__(GffDataFrame)  # Create without __init__
+    gff = GFFDataFrame.__new__(GFFDataFrame)  # Create without __init__
     gff.df = df
     return gff
 
@@ -132,7 +132,7 @@ def test_extract_feature(
 
 def test_get_splicing_detail(
     sequence_extractor: SequenceExtractor,
-    sample_gff_data: GffDataFrame,
+    sample_gff_data: GFFDataFrame,
     sample_splicing_info: list[SplicingInfo],
 ) -> None:
     """Test splicing detail extraction"""
@@ -147,7 +147,7 @@ def test_get_splicing_detail(
 
 def test_extract_aminoacids_integration(
     sequence_extractor: SequenceExtractor,
-    sample_gff_data: GffDataFrame,
+    sample_gff_data: GFFDataFrame,
     sample_splicing_info: list[SplicingInfo],
 ) -> None:
     """Integration test for complete amino acid extraction"""

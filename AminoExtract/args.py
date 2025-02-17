@@ -9,7 +9,7 @@ import sys
 from pathlib import Path, PurePath
 
 from AminoExtract import __prog__, __version__
-from AminoExtract.functions import QuickArgFormatter, RichParser, log
+from AminoExtract.logging import QuickArgFormatter, RichParser, log
 
 
 def set_output_type(args: argparse.Namespace) -> argparse.Namespace:

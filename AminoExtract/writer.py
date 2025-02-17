@@ -4,7 +4,7 @@ from pathlib import Path
 
 from Bio.Seq import Seq
 
-from AminoExtract.functions import log
+from AminoExtract.logging import log
 
 
 class FastaWriter:

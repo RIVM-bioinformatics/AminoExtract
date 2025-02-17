@@ -1,14 +1,15 @@
 from logging import Logger
+from typing import cast
 
 import pandas as pd
 from Bio.SeqRecord import SeqRecord
 
 from AminoExtract.gff_data import SplicingInfo
-from AminoExtract.reader import GffDataFrame
+from AminoExtract.reader import GFFDataFrame
 
 
 class GFFFilter:
-    def __init__(self, df: pd.DataFrame, logger: Logger, verbose: bool = False):
+    def __init__(self, df: pd.DataFrame, logger: Logger, verbose: bool = False) -> None:
         self.df = df
         self.logger = logger
         self.verbose = verbose
@@ -21,7 +22,7 @@ class GFFFilter:
             return self.df
         return self.df[self.df["type"] == feature_type]
 
-    def get_splicing_info(self, filtered_df: pd.DataFrame) -> list[SplicingInfo | None]:
+    def get_splicing_info(self, filtered_df: pd.DataFrame) -> list[SplicingInfo]:
         """Get splicing information from a filtered dataframe. Attributes are assumed to be parsed."""
 
         splicing = filtered_df.groupby("ID").agg(
@@ -39,9 +40,13 @@ class GFFFilter:
             lambda x: list(zip(x["start"], x["end"])), axis=1
         )
 
+        # Im using cast here to tell mypy that the types are correct
+        # This is necessary because if you access a row in a DataFrame, it returns as an Any object
         return [
             SplicingInfo(
-                cds_locations=row.CDSes, parent_ids=row.Parent, gene_id=row.Index
+                cds_locations=cast(list[tuple[int, int]], row.CDSes),
+                parent_ids=cast(set[str], row.Parent),
+                gene_id=cast(str, row.Index),
             )
             for row in splicing[["CDSes", "Parent"]].itertuples()
         ]
@@ -49,16 +54,17 @@ class GFFFilter:
 
 class GFFRecordFilter:
     def __init__(
-        self, gff_records: GffDataFrame, logger: Logger, verbose: bool = False
-    ):
+        self, gff_records: GFFDataFrame, logger: Logger, verbose: bool = False
+    ) -> None:
         self.gff_records = gff_records
+        assert gff_records.df is not None, "GFF records are empty"
         self.logger = logger
         self.filter = GFFFilter(gff_records.df, self.logger, verbose)
         self.verbose = verbose
 
     def apply_filters(
         self, seq_records: list[SeqRecord], feature_type: str
-    ) -> GffDataFrame:
+    ) -> GFFDataFrame:
         seq_ids = [record.id for record in seq_records if record.id is not None]
 
         if self.verbose:
@@ -83,12 +89,12 @@ class GFFRecordFilter:
 class SequenceFilter:
     def __init__(
         self, seq_records: list[SeqRecord], logger: Logger, verbose: bool = False
-    ):
+    ) -> None:
         self.seq_records = seq_records
         self.logger = logger
         self.verbose = verbose
 
-    def filter_sequences(self, gff: GffDataFrame) -> list[SeqRecord]:
+    def filter_sequences(self, gff: GFFDataFrame) -> list[SeqRecord]:
         """Takes a GffDataFrame object and a list of SeqRecord objects, and returns a list of SeqRecord objects
         that only contain the sequences that are specified in the GffDataFrame object.
 

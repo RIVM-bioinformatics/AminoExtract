@@ -5,9 +5,9 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from pandas import Series
 
-from AminoExtract.functions import log
 from AminoExtract.gff_data import SplicingInfo
-from AminoExtract.reader import GffDataFrame
+from AminoExtract.logging import log
+from AminoExtract.reader import GFFDataFrame
 
 
 @dataclass
@@ -28,7 +28,7 @@ class FeatureData:
 class SequenceExtractor:
     def __init__(
         self, logger: Logger = log, verbose: bool = False, keep_gaps: bool = False
-    ):
+    ) -> None:
         self.logger = logger
         self.verbose = verbose
         self.keep_gaps = keep_gaps
@@ -67,11 +67,12 @@ class SequenceExtractor:
         full_seq = self._combine_exons(exon_sequences, feature.exons[0].strand)
         return full_seq.translate(to_stop=True)
 
-    def _get_splicing_detail(self, gff_obj: GffDataFrame, row: Series) -> SplicingInfo:
+    def _get_splicing_detail(self, gff_obj: GFFDataFrame, row: Series) -> SplicingInfo:
         if not hasattr(row, "ID"):
             raise ValueError(
                 f"If there are splicing details, the GFF must have an 'ID' column"
             )
+        assert gff_obj.splicing_info is not None, "No splicing information loaded"
         splicing_details = [x for x in gff_obj.splicing_info if row.ID == x.gene_id]
         assert (
             len(splicing_details) == 1  # sanity check
@@ -89,7 +90,7 @@ class SequenceExtractor:
 
     def extract_aminoacids(
         self,
-        gff_obj: GffDataFrame,
+        gff_obj: GFFDataFrame,
         seq_records: list[SeqRecord],
     ) -> dict[str, dict[str, Seq]]:
         """Extract amino acid sequences from sequence records based on GFF annotations.

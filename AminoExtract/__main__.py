@@ -12,9 +12,9 @@ from Bio.Seq import Seq
 
 from AminoExtract.args import validate_args
 from AminoExtract.filter import GFFRecordFilter, SequenceFilter
-from AminoExtract.functions import log
+from AminoExtract.logging import log
 from AminoExtract.reader import SequenceReader
-from AminoExtract.sequences import GffDataFrame, SequenceExtractor
+from AminoExtract.sequences import GFFDataFrame, SequenceExtractor
 from AminoExtract.writer import FastaWriter
 
 
@@ -52,7 +52,7 @@ class AminoAcidExtractor:
         sequences = self._extract_sequences(gff_data)
         self._write_output(sequences)
 
-    def _load_and_filter_gff(self) -> GffDataFrame:
+    def _load_and_filter_gff(self) -> GFFDataFrame:
         gff_obj = self.reader.read_gff(self.config.input_gff)
 
         gff_filter = GFFRecordFilter(
@@ -68,7 +68,7 @@ class AminoAcidExtractor:
             )
         return filtered_gff
 
-    def _extract_sequences(self, gff_data: GffDataFrame) -> dict[str, dict[str, Seq]]:
+    def _extract_sequences(self, gff_data: GFFDataFrame) -> dict[str, dict[str, Seq]]:
         seq_filter = SequenceFilter(
             seq_records=self.seq_records,
             logger=self.log,
