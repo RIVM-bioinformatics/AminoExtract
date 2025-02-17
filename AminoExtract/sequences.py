@@ -1,3 +1,5 @@
+""""Sequence extraction module for AminoExtract."""
+
 from dataclasses import dataclass
 from logging import Logger
 
@@ -12,6 +14,8 @@ from AminoExtract.reader import GFFDataFrame
 
 @dataclass
 class ExonData:
+    """Dataclass for exon information"""
+
     start: int
     end: int
     strand: str
@@ -20,12 +24,16 @@ class ExonData:
 
 @dataclass
 class FeatureData:
+    """Dataclass for feature information"""
+
     name: str
     exons: list[ExonData]
     sequence_id: str
 
 
 class SequenceExtractor:
+    """Extract amino acid sequences from sequence records based on GFF annotations."""
+
     def __init__(
         self, logger: Logger = log, verbose: bool = False, keep_gaps: bool = False
     ) -> None:
@@ -70,7 +78,7 @@ class SequenceExtractor:
     def _get_splicing_detail(self, gff_obj: GFFDataFrame, row: Series) -> SplicingInfo:
         if not hasattr(row, "ID"):
             raise ValueError(
-                f"If there are splicing details, the GFF must have an 'ID' column"
+                "If there are splicing details, the GFF must have an 'ID' column"
             )
         assert gff_obj.splicing_info is not None, "No splicing information loaded"
         splicing_details = [x for x in gff_obj.splicing_info if row.ID == x.gene_id]

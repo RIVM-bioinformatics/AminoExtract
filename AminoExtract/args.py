@@ -8,41 +8,59 @@ import re
 import sys
 from pathlib import Path, PurePath
 
-from AminoExtract import __prog__, __version__
 from AminoExtract.logging import QuickArgFormatter, RichParser, log
+from AminoExtract.version import __prog__, __version__
+
+# When you log a message with f-strings, you always execute the f-string,
+# even if the log level is not set to display the message.
+# You can circumvent this by using ("lala %s", variable) instead.
+# However, this is such a minor optimization that it's not worth it, imo.
+# pylint: disable=logging-fstring-interpolation
 
 
 def set_output_type(args: argparse.Namespace) -> argparse.Namespace:
+    """Set the output type (dir or file) based on the given output path."""
+
     path = Path(args.output)
 
     if path.is_dir():
         log.info(
-            f"The given output seems to be a directory.\nAll amino acid sequences will be written to individual files in this directory.\n([cyan]{args.output}[/cyan])"
+            "The given output seems to be a directory.\n"
+            "All amino acid sequences will be written to individual files in this directory."
+            f"\n([cyan]{args.output}[/cyan])"
         )
         args.outtype = 1
         return args
-    else:
-        log.info(
-            f"The given output seems to be a file.\nAll amino acid sequences will be written to this file.\n([cyan]{args.output}[/cyan])"
-        )
-        args.outtype = 0
-        return args
+    log.info(
+        "The given output seems to be a file.\n"
+        "All amino acid sequences will be written to this file.\n"
+        f"([cyan]{args.output}[/cyan])"
+    )
+    args.outtype = 0
+    return args
 
 
 def check_features(args: argparse.Namespace) -> argparse.Namespace:
+    """Checks if the given feature type is valid."""
+
     if args.feature_type not in ["CDS", "gene", "all"]:
         log.error(
-            f"[green]'{args.feature_type}'[/green] is not a valid feature type.\nPlease use any of the following: [bold]'CDS'[/bold],[bold]'gene'[/bold], or [bold]'all'[/bold]\nThese keywords are case-sensitive."
+            f"[green]'{args.feature_type}'[/green] is not a valid feature type.\n"
+            "Please use any of the following: [bold]'CDS'[/bold],[bold]'gene'[/bold],"
+            " or [bold]'all'[/bold]\n"
+            "These keywords are case-sensitive."
         )
         sys.exit(1)
     return args
 
 
 def check_valid_output_filename(args: argparse.Namespace) -> argparse.Namespace:
+    """Check if the output filename is valid."""
     output_ext = PurePath(args.output).name
     if not re.match(r"^[\w\-. ]+$", output_ext) or "/." in str(args.output):
         log.error(
-            f"'[red]{output_ext}[/red]' does not seem to be a valid filename.\nPlease use only alphanumeric characters, underscores, and dashes."
+            f"'[red]{output_ext}[/red]' does not seem to be a valid filename.\n"
+            "Please use only alphanumeric characters, underscores, and dashes."
         )
         sys.exit(1)
     return args
@@ -72,7 +90,8 @@ def check_file_ext(
         assert choices is not None, "No choices given"
         if not any(ext.endswith(c) for c in choices):
             log.error(
-                f"{fname} does not have a valid {ftype} file extension.\nPlease use any of the following extensions: [bold]{' '.join(choices)}[/bold]"
+                f"{fname} does not have a valid {ftype} file extension.\n"
+                "Please use any of the following extensions: [bold]{' '.join(choices)}[/bold]"
             )
             sys.exit(1)
         return Path(fname).resolve()
@@ -97,7 +116,10 @@ def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
     parser = RichParser(
         prog=f"[bold]{__prog__}[/bold]",
         usage=rf"{__prog__} \[required options] \[optional options]",
-        description=f"[bold underline]{__prog__}[/bold underline]: A quick tool to extract amino acid sequences from a FASTA file.",
+        description=(
+            f"[bold underline]{__prog__}[/bold underline]:"
+            " A quick tool to extract amino acid sequences from a FASTA file."
+        ),
         formatter_class=QuickArgFormatter,
         add_help=False,
     )
@@ -132,7 +154,15 @@ def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
         "-o",
         type=lambda s: Path(s).absolute(),
         metavar="Path",
-        help="Output path, either a [underline cyan]file[/underline cyan] or [underline magenta]directory[/underline magenta].\n * If a file path is given, then all amino acid sequences will be written to this file.\n * If a directory path is given, then each amino acid sequence will be written to a separate file in this directory.\n [underline]Please see the docs for more info[/underline]",
+        help=(
+            "Output path, either a [underline cyan]file[/underline cyan] or "
+            "[underline magenta]directory[/underline magenta].\n"
+            " * If a file path is given, then all amino acid sequences will be written to this "
+            "file.\n"
+            " * If a directory path is given, then each amino acid sequence will be written to a "
+            "separate file in this directory.\n"
+            " [underline]Please see the docs for more info[/underline]"
+        ),
         required=True,
     )
 
@@ -141,7 +171,14 @@ def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
         "-n",
         type=str,
         metavar="Text",
-        help="Name of the sample that is being processed.\n * This will be used to create the fasta headers when all amino acid sequences are written to a single file.\n * If the output is going to be written to individual files in an output-directory then this name will be used as a prefix to create the output files.\n [underline]Please see the docs for more info[/underline]",
+        help=(
+            "Name of the sample that is being processed.\n"
+            " * This will be used to create the fasta headers when all amino acid sequences are "
+            "written to a single file.\n"
+            " * If the output is going to be written to individual files in an output-directory, "
+            "then this name will be used as a prefix to create the output files.\n"
+            " [underline]Please see the docs for more info[/underline]"
+        ),
         required=True,
     )
 
@@ -151,7 +188,11 @@ def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
         type=str,
         metavar="Text",
         default="CDS",
-        help="Defines which feature types in the input gff will be processed to amino acid sequences. Defaults to 'CDS'.\nOptions are 'CDS', 'gene', and 'all'",
+        help=(
+            "Defines which feature types in the input gff will be processed to AA sequences. "
+            "Defaults to 'CDS'.\n"
+            "Options are 'CDS', 'gene', and 'all'"
+        ),
         required=False,
     )
 
@@ -160,7 +201,13 @@ def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
         "-kg",
         action="store_true",
         default=False,
-        help='If this flag is set then the amino acid translation will be done including gaps in the nucleotide sequence.\n This results in an "X" on gapped positions in the aminoacid sequence as gap characters ("-") will be replaced by "N" in the nucleotide sequence.\n  [underline]By default, gaps are removed before translation.[/underline]',
+        help=(
+            "If this flag is set then the AA translation will be done including gaps in the "
+            "nucleotide sequence.\n"
+            'This results in an "X" on gapped positions in the AA sequence as gap characters '
+            '("-") will be replaced by "N" in the nucleotide sequence.\n'
+            "[underline]By default, gaps are removed before translation.[/underline]"
+        ),
         required=False,
     )
 
@@ -195,6 +242,10 @@ def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
 
 
 def validate_args(givenargs: list[str]) -> argparse.Namespace:
+    """
+    Validate the given arguments by setting the output type, checking the feature type,
+    and checking the output filename.
+    """
     parsed_args = set_output_type(get_args(givenargs))
     parsed_args = check_features(parsed_args)
     return check_valid_output_filename(parsed_args)

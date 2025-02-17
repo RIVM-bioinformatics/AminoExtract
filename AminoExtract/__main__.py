@@ -20,6 +20,12 @@ from AminoExtract.writer import FastaWriter
 
 @dataclass
 class Config:
+    """Configuration class for AminoExtract."""
+
+    # For a config class I dont care how many attributes it has,
+    # so longs as they are all together in one place.
+    # pylint: disable=too-many-instance-attributes
+
     input_fasta: Path
     input_gff: Path
     output: Path
@@ -31,6 +37,10 @@ class Config:
     outtype: str
 
     def __post_init__(self) -> None:
+        """
+        Add a string representation of the output type.
+        This makes it easier to use the output type in the FastaWriter.
+        """
         # 1 is dir, 0 is file
         if self.outtype_int == 0:
             self.outtype = "single_file"
@@ -41,6 +51,13 @@ class Config:
 
 
 class AminoAcidExtractor:
+    """
+    Extract amino acid sequences from GFF annotations and FASTA files.
+    """
+
+    # as this is a __main__ module, I just want it to run the main function
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, config: Config) -> None:
         self.log = log
         self.config = config
@@ -48,6 +65,9 @@ class AminoAcidExtractor:
         self.seq_records = self.reader.read_fasta(config.input_fasta)
 
     def run(self) -> None:
+        """
+        First load and filter the GFF file, then extract the sequences and write the output.
+        """
         gff_data = self._load_and_filter_gff()
         sequences = self._extract_sequences(gff_data)
         self._write_output(sequences)

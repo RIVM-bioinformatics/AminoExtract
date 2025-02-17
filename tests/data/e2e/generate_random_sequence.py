@@ -1,5 +1,10 @@
+"""Quick script to generate a random DNA sequence of a given length."""
+
+import random
+
+
 def generate_random_sequence(length: int, no_stop_codons=False) -> str:
-    import random
+    """Generate a random DNA sequence of a given length."""
 
     seq = "".join(random.choices("ATGC", k=length))
 

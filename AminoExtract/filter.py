@@ -1,3 +1,7 @@
+"""
+Module for filtering GFF records and SeqRecords based on sequence IDs and feature types.
+"""
+
 from logging import Logger
 from typing import cast
 
@@ -9,21 +13,30 @@ from AminoExtract.reader import GFFDataFrame
 
 
 class GFFFilter:
+    """
+    Class for filtering GFF records based on sequence IDs and feature types.
+    """
+
     def __init__(self, df: pd.DataFrame, logger: Logger, verbose: bool = False) -> None:
         self.df = df
         self.logger = logger
         self.verbose = verbose
 
     def filter_by_seqids(self, seq_ids: list[str]) -> pd.DataFrame:
+        """Filter GFF records of the GFFFilter class objext by some sequence IDs"""
         return self.df[self.df["seqid"].isin(seq_ids)]
 
     def filter_by_feature_type(self, feature_type: str) -> pd.DataFrame:
+        """Filter GFF records of the GFFFilter class object by some feature type"""
         if feature_type == "all":
             return self.df
         return self.df[self.df["type"] == feature_type]
 
     def get_splicing_info(self, filtered_df: pd.DataFrame) -> list[SplicingInfo]:
-        """Get splicing information from a filtered dataframe. Attributes are assumed to be parsed."""
+        """
+        Get splicing information from a filtered dataframe.
+        Attributes are assumed to be parsed.
+        """
 
         splicing = filtered_df.groupby("ID").agg(
             {"start": tuple, "end": tuple, "Parent": set}
@@ -53,6 +66,12 @@ class GFFFilter:
 
 
 class GFFRecordFilter:
+    """Wrapper class for GFFFilter that applies those filters to GFF records."""
+
+    # This class is made to bundle the whole process of filtering GFF records,
+    # so it only has one method
+    # pylint: disable=too-few-public-methods
+
     def __init__(
         self, gff_records: GFFDataFrame, logger: Logger, verbose: bool = False
     ) -> None:
@@ -65,6 +84,10 @@ class GFFRecordFilter:
     def apply_filters(
         self, seq_records: list[SeqRecord], feature_type: str
     ) -> GFFDataFrame:
+        """
+        Applies filters to sequences based on sequence IDs and feature types
+        and stores them as a GFFDataFrame object.
+        """
         seq_ids = [record.id for record in seq_records if record.id is not None]
 
         if self.verbose:
@@ -87,6 +110,14 @@ class GFFRecordFilter:
 
 
 class SequenceFilter:
+    """
+    Filter SeqRecord objects based on sequence IDs.
+    """
+
+    # This could maybe be a function instead of a class,
+    # but all the other classes are classes and I wanted to keep it consistent
+    # pylint: disable=too-few-public-methods
+
     def __init__(
         self, seq_records: list[SeqRecord], logger: Logger, verbose: bool = False
     ) -> None:
@@ -95,8 +126,10 @@ class SequenceFilter:
         self.verbose = verbose
 
     def filter_sequences(self, gff: GFFDataFrame) -> list[SeqRecord]:
-        """Takes a GffDataFrame object and a list of SeqRecord objects, and returns a list of SeqRecord objects
-        that only contain the sequences that are specified in the GffDataFrame object.
+        """
+        Takes a GffDataFrame object and a list of SeqRecord objects,
+        and returns a list of SeqRecord objects that only contain
+        the sequences that are specified in the GffDataFrame object.
 
         Parameters
         ----------
@@ -107,7 +140,8 @@ class SequenceFilter:
 
         Returns
         -------
-            A list of SeqRecord objects that only contain the sequences that are specified in the GffDataFrame object.
+            A list of SeqRecord objects that only contain the sequences that
+            are specified in the GffDataFrame object.
 
         """
 

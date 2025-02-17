@@ -1,3 +1,5 @@
+"""This module contains dataclasses and enums to represent GFF files and their contents."""
+
 import gzip
 from dataclasses import dataclass
 from enum import Enum
@@ -9,6 +11,8 @@ from AminoExtract.file_utils import FileUtils
 
 @dataclass(frozen=True)
 class GFFColumn:
+    """Dataclass to represent a GFF column"""
+
     index: int
     name: str
     dtype: Any
@@ -16,10 +20,13 @@ class GFFColumn:
 
 @dataclass
 class GFFHeader:
+    """Dataclass to represent the header of a GFF file"""
+
     raw_text: str
 
     @classmethod
     def from_file(cls, file_path: Path) -> "GFFHeader":
+        """Load the header of a GFF file"""
         header_lines = []
         with cls._open_file(file_path) as f:
             for line in f:
@@ -30,10 +37,24 @@ class GFFHeader:
 
     @staticmethod
     def _open_file(path: Path) -> TextIO:
-        return gzip.open(path, "rt") if FileUtils.is_gzipped(path) else open(path)
+        """
+        Open a GFF file for reading
+
+        Notes:
+        -------
+        This method should be used in a context manager to ensure the file is closed properly.
+
+        """
+        return (
+            gzip.open(path, "rt", encoding="utf-8")
+            if FileUtils.is_gzipped(path)
+            else open(path, "rt", encoding="utf-8")
+        )
 
 
 class GFFColumns(Enum):
+    """Enum to represent the columns of a GFF file"""
+
     SEQID = GFFColumn(0, "seqid", str)
     SOURCE = GFFColumn(1, "source", str)
     TYPE = GFFColumn(2, "type", str)
@@ -46,14 +67,17 @@ class GFFColumns(Enum):
 
     @classmethod
     def get_names(cls) -> list[str]:
+        """Get the names of the columns"""
         return [col.value.name for col in cls]
 
     @classmethod
     def get_dtypes(cls) -> dict[str, Any]:
+        """Get the data types of the columns"""
         return {col.value.name: col.value.dtype for col in cls}
 
     @classmethod
     def get_indices(cls) -> dict[str, int]:
+        """Get the indices of the columns"""
         return {col.value.name: col.value.index for col in cls}
 
 

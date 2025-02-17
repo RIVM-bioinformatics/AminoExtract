@@ -1,6 +1,8 @@
+"""Quick script to swap the stop codons of the edenprotein.1 CDS in the complex_input.fa file"""
+
 import pandas as pd
 
-with open("tests/data/e2e/complex_input.fa") as f:
+with open("tests/data/e2e/complex_input.fa", "r", encoding="utf-8") as f:
     complex_output = f.read()
 
 column_names = [
@@ -36,9 +38,9 @@ eden1_table["nucl"] = eden1_table.apply(
 )
 
 # combine all the CDS sequences into one
-old_eden1_seq = "".join(eden1_table["nucl"].tolist())
+OLD_EDEN1_SEQ = "".join(eden1_table["nucl"].tolist())
 
-new_eden1_seq = "ATG" + old_eden1_seq[3:-3] + "TAA"
+NEW_EDEN1_SEQ = "ATG" + OLD_EDEN1_SEQ[3:-3] + "TAA"
 
 # edit the nucleotide sequence
 lowest = min(eden1_table["start"])

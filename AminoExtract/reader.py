@@ -1,3 +1,5 @@
+"""Module for reading GFF and FASTA files."""
+
 import re
 import sys
 from logging import Logger
@@ -17,7 +19,8 @@ class AttributeParser:
     @staticmethod
     def parse_attributes(attr_string: str) -> dict[str, str]:
         """
-        Takes a string like "a=1;b=2;c=3" and returns a dictionary like {"a": "1", "b": "2", "c": "3"}
+        Takes a string like "a=1;b=2;c=3",
+        and returns a dictionary like {"a": "1", "b": "2", "c": "3"}
 
         Parameters
         ----------
@@ -27,7 +30,8 @@ class AttributeParser:
         Returns
         -------
         dict
-            A dictionary with the key being the attribute name and the value being the attribute value.
+            A dictionary with the key being the attribute name,
+            and the value being the attribute value.
         """
 
         attr_string_without_quotes = (
@@ -39,10 +43,10 @@ class AttributeParser:
                 pair.split("=") if "=" in pair else pair.split(" ")
                 for pair in attr_string_without_quotes.split(";")
             ]
-        except ValueError:
-            raise ValueError(f"{attr_string} is not separated by '=' or ' '")
+        except ValueError as e:
+            raise ValueError(f"{attr_string} is not separated by '=' or ' '") from e
 
-        return {key: value for key, value in pairs}
+        return dict(pairs)
 
     @staticmethod
     def normalize_name_attribute(attr: str) -> str:
@@ -53,7 +57,13 @@ class AttributeParser:
         return re.sub(r"\b\w*name\w*\b", "Name", attr, flags=re.IGNORECASE)
 
 
-class GFFDataFrame(object):
+class GFFDataFrame:
+    """Class for reading and processing GFF files."""
+
+    # This class does all its work in the constructor, so maybe it could be a function,
+    # but I like the idea of having a class that represents a GFF file
+    # pylint: disable=too-few-public-methods
+
     def __init__(
         self,
         inputfile: str | Path,
@@ -130,7 +140,12 @@ class GFFDataFrame(object):
         """Returns True if the dataframe is not empty and the feature type is not None"""
         if self.df is None or feature_type is None:
             self.logger.warning(
-                f"The GFF file is empty after filtering.\nThis might mean that there are no records within the GFF that match the sequence ID(s) in the given Fasta file.\nThis could also mean that there are no records within the GFF that match the feature type '[cyan]{feature_type}[/cyan]'.\nPlease check your inputs and try again."
+                "The GFF file is empty after filtering.\n"
+                "This might mean that there are no records within the GFF that match the "
+                "sequence ID(s) in the given Fasta file.\n"
+                "This could also mean that there are no records within the GFF that match "
+                f"the feature type '[cyan]{feature_type}[/cyan]'.\n"
+                "Please check your inputs and try again."
             )
             return False
         return True

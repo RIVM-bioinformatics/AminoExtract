@@ -7,47 +7,63 @@ import pytest
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
+# see tests/unit/test_reader.py for explanation
+# pylint: disable=import-error
 from AminoExtract.gff_data import SplicingInfo
 from AminoExtract.logging import log
 from AminoExtract.reader import GFFDataFrame
 from AminoExtract.sequences import ExonData, FeatureData, SequenceExtractor
 
+# This is a test file, so we can ignore protected-access
+# pylint: disable=protected-access
 
-@pytest.fixture
-def sequence_extractor() -> SequenceExtractor:
+
+# If a fixture is used in the same module in which it is defined,
+# the function name of the fixture will be shadowed by
+# the function arg that requests the fixture
+# https://docs.pytest.org/en/stable/reference/reference.html#pytest-fixture
+@pytest.fixture(name="sequence_extractor")
+def fixture_sequence_extractor() -> SequenceExtractor:
+    """Return a SequenceExtractor instance"""
     return SequenceExtractor(logger=log, verbose=False, keep_gaps=False)
 
 
-@pytest.fixture
-def sample_sequence() -> Seq:
+@pytest.fixture(name="sample_sequence")
+def fixture_sample_sequence() -> Seq:
+    """Return a sample sequence with gaps"""
     return Seq("ATG-CC-TAG")
 
 
-@pytest.fixture
-def sample_seq_dict() -> dict[str, Seq]:
+@pytest.fixture(name="sample_seq_dict")
+def fixture_sample_seq_dict() -> dict[str, Seq]:
+    """Return a sample sequence dictionary"""
     return {"seq1": Seq("ATGCCCTAGGGG")}
 
 
-@pytest.fixture
-def sample_exon() -> ExonData:
+@pytest.fixture(name="sample_exon")
+def fixture_sample_exon() -> ExonData:
+    """Return a sample exon"""
     return ExonData(start=1, end=6, strand="+", phase=0)
 
 
-@pytest.fixture
-def sample_feature() -> FeatureData:
+@pytest.fixture(name="sample_feature")
+def fixture_sample_feature() -> FeatureData:
+    """Return a sample feature"""
     exon = ExonData(start=1, end=6, strand="+", phase=0)
     return FeatureData(name="gene1", exons=[exon], sequence_id="seq1")
 
 
-@pytest.fixture
-def sample_splicing_info() -> list[SplicingInfo]:
+@pytest.fixture(name="sample_splicing_info")
+def fixture_sample_splicing_info() -> list[SplicingInfo]:
+    """Return a sample splicing info list"""
     return [
         SplicingInfo(cds_locations=[(1, 6)], parent_ids={"parent1"}, gene_id="gene1")
     ]
 
 
-@pytest.fixture
-def sample_gff_data() -> GFFDataFrame:
+@pytest.fixture(name="sample_gff_data")
+def fixture_sample_gff_data() -> GFFDataFrame:
+    """Return a sample GFFDataFrame"""
     data = {
         "seqid": ["seq1"],
         "type": ["gene"],
