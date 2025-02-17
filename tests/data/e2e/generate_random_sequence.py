@@ -1,12 +1,12 @@
 """Quick script to generate a random DNA sequence of a given length."""
 
-import random
+import secrets
 
 
 def generate_random_sequence(length: int, no_stop_codons=False) -> str:
     """Generate a random DNA sequence of a given length."""
 
-    seq = "".join(random.choices("ATGC", k=length))
+    seq = "".join(secrets.choice("ATGC") for _ in range(length))
 
     if not no_stop_codons:
         return seq
@@ -21,7 +21,9 @@ def generate_random_sequence(length: int, no_stop_codons=False) -> str:
 
     def _replacer(seq):
         for stop_codon in stop_codons:
-            seq = seq.replace(stop_codon, "".join(random.choices("ATGC", k=3)))
+            seq = seq.replace(
+                stop_codon, "".join(secrets.choice("ATGC") for _ in range(3))
+            )
         return seq
 
     while _detector(seq):

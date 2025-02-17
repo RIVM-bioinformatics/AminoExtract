@@ -69,7 +69,7 @@ class FlexiFormatter(RawTextHelpFormatter):
         """Split text in to paragraphs of like-indented lines."""
 
         text = textwrap.dedent(text).strip()
-        text = _re.sub("\n\n[\n]+", "\n\n", text)
+        text = _re.sub("\n\n\n+", "\n\n", text)
 
         last_sub_indent = None
         paragraphs = []

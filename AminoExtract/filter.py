@@ -22,15 +22,17 @@ class GFFFilter:
         self.logger = logger
         self.verbose = verbose
 
-    def filter_by_seqids(self, seq_ids: list[str]) -> pd.DataFrame:
+    def filter_by_seqids(self, seq_ids: list[str], df: pd.DataFrame) -> pd.DataFrame:
         """Filter GFF records of the GFFFilter class objext by some sequence IDs"""
-        return self.df[self.df["seqid"].isin(seq_ids)]
+        return df[df["seqid"].isin(seq_ids)]
 
-    def filter_by_feature_type(self, feature_type: str) -> pd.DataFrame:
+    def filter_by_feature_type(
+        self, feature_type: str, df: pd.DataFrame
+    ) -> pd.DataFrame:
         """Filter GFF records of the GFFFilter class object by some feature type"""
         if feature_type == "all":
-            return self.df
-        return self.df[self.df["type"] == feature_type]
+            return df
+        return df[df["type"] == feature_type]
 
     def get_splicing_info(self, filtered_df: pd.DataFrame) -> list[SplicingInfo]:
         """
@@ -94,8 +96,8 @@ class GFFRecordFilter:
             self._log_filtering_info(seq_ids, feature_type)
 
         assert seq_ids, "No sequence IDs found in the given SeqRecords"
-        filtered_df = self.filter.filter_by_seqids(seq_ids)
-        filtered_df = self.filter.filter_by_feature_type(feature_type)
+        filtered_df = self.filter.filter_by_seqids(seq_ids, self.filter.df)
+        filtered_df = self.filter.filter_by_feature_type(feature_type, filtered_df)
 
         self.gff_records.df = filtered_df
         self.gff_records.splicing_info = self.filter.get_splicing_info(filtered_df)

@@ -131,7 +131,7 @@ class GFFDataFrame:
 
         # I need Parent to be a column, even if it's empty
         # This is because I use it to groupby in the GFFFilter class
-        if not "Parent" in self.df.columns:
+        if "Parent" not in self.df.columns:
             self.df["Parent"] = None
 
         self.df.drop("attributes", axis=1, inplace=True)
