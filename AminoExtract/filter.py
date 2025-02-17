@@ -1,16 +1,16 @@
-from dataclasses import dataclass
+from logging import Logger
 
 import pandas as pd
 from Bio.SeqRecord import SeqRecord
 
-from AminoExtract.functions import log
 from AminoExtract.gff_data import SplicingInfo
 from AminoExtract.reader import GffDataFrame
 
 
 class GFFFilter:
-    def __init__(self, df: pd.DataFrame, verbose: bool = False):
+    def __init__(self, df: pd.DataFrame, logger: Logger, verbose: bool = False):
         self.df = df
+        self.logger = logger
         self.verbose = verbose
 
     def filter_by_seqids(self, seq_ids: list[str]) -> pd.DataFrame:
@@ -48,9 +48,12 @@ class GFFFilter:
 
 
 class GFFRecordFilter:
-    def __init__(self, gff_records: GffDataFrame, verbose: bool = False):
+    def __init__(
+        self, gff_records: GffDataFrame, logger: Logger, verbose: bool = False
+    ):
         self.gff_records = gff_records
-        self.filter = GFFFilter(gff_records.df, verbose)
+        self.logger = logger
+        self.filter = GFFFilter(gff_records.df, self.logger, verbose)
         self.verbose = verbose
 
     def apply_filters(
@@ -72,14 +75,17 @@ class GFFRecordFilter:
 
     def _log_filtering_info(self, seq_ids: list[str], feature_type: str) -> None:
         """Logging for verbose mode"""
-        log.info("Filtering GFF records:")
-        log.info(f"Feature type: {feature_type}")
-        log.info(f"Sequence IDs: {', '.join(seq_ids)}")
+        self.logger.info("Filtering GFF records:")
+        self.logger.info(f"Feature type: {feature_type}")
+        self.logger.info(f"Sequence IDs: {', '.join(seq_ids)}")
 
 
 class SequenceFilter:
-    def __init__(self, seq_records: list[SeqRecord], verbose: bool = False):
+    def __init__(
+        self, seq_records: list[SeqRecord], logger: Logger, verbose: bool = False
+    ):
         self.seq_records = seq_records
+        self.logger = logger
         self.verbose = verbose
 
     def filter_sequences(self, gff: GffDataFrame) -> list[SeqRecord]:

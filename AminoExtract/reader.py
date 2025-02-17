@@ -1,5 +1,6 @@
 import re
 import sys
+from logging import Logger
 from pathlib import Path
 
 import pandas as pd
@@ -80,7 +81,11 @@ class GffDataFrame(object):
         self._process_attributes()
 
     def _read_gff_data(self) -> pd.DataFrame:
-        compression = "gzip" if FileUtils.is_gzipped(self.file_path) else None
+        # compression must be in dict format
+        # https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html
+        compression = (
+            {"method": "gzip"} if FileUtils.is_gzipped(self.file_path) else None
+        )
         return pd.read_csv(
             self.file_path,
             sep="\t",
@@ -107,7 +112,7 @@ class GffDataFrame(object):
             return
 
         existing_cols = set(self.df.columns)
-        attr_df = pd.json_normalize(self.df["attributes"])
+        attr_df = pd.DataFrame(self.df["attributes"].tolist())
 
         # Only add new columns
         new_cols = [col for col in attr_df.columns if col not in existing_cols]
@@ -124,7 +129,7 @@ class GffDataFrame(object):
     def validate_dataframe(self, feature_type: str | None = None) -> bool:
         """Returns True if the dataframe is not empty and the feature type is not None"""
         if self.df is None or feature_type is None:
-            log.warning(
+            self.logger.warning(
                 f"The GFF file is empty after filtering.\nThis might mean that there are no records within the GFF that match the sequence ID(s) in the given Fasta file.\nThis could also mean that there are no records within the GFF that match the feature type '[cyan]{feature_type}[/cyan]'.\nPlease check your inputs and try again."
             )
             return False
@@ -134,16 +139,17 @@ class GffDataFrame(object):
 class SequenceReader:
     """Handles reading sequence and gff files"""
 
-    def __init__(self, verbose: bool = False) -> None:
+    def __init__(self, logger: Logger, verbose: bool = False) -> None:
+        self.logger = logger
         self.verbose = verbose
 
-    def read_gff(self, file: str) -> GffDataFrame:
+    def read_gff(self, file: Path) -> GffDataFrame:
         """
         Reads a GFF file and returns a GffDataFrame object.
 
         Parameters
         ----------
-        file : str
+        file : Path
             The path to the GFF file to be read.
         verbose : bool, optional
             If True, print out the number of lines read in.
@@ -155,9 +161,9 @@ class SequenceReader:
         GffDataFrame
             A GffDataFrame object containing the data from the GFF file.
         """
-        return GffDataFrame(inputfile=file, verbose=self.verbose)
+        return GffDataFrame(inputfile=file, logger=self.logger, verbose=self.verbose)
 
-    def read_fasta(self, file: str) -> list:
+    def read_fasta(self, file: Path) -> list:
         """
         Reads a FASTA file and returns a list of SeqRecord objects
 
@@ -174,5 +180,5 @@ class SequenceReader:
             A list of SeqRecord objects representing the sequences in the input file.
         """
         if self.verbose:
-            log.info(f"Parsing FASTA input file: '[green]{file}[/green]'")
+            self.logger.info(f"Parsing FASTA input file: '[green]{file.name}[/green]'")
         return list(SeqIO.parse(file, "fasta"))

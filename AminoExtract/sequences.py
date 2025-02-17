@@ -1,10 +1,11 @@
-import logging
 from dataclasses import dataclass
+from logging import Logger
 
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from pandas import Series
 
+from AminoExtract.functions import log
 from AminoExtract.gff_data import SplicingInfo
 from AminoExtract.reader import GffDataFrame
 
@@ -25,10 +26,12 @@ class FeatureData:
 
 
 class SequenceExtractor:
-    def __init__(self, keep_gaps: bool = False, verbose: bool = False):
-        self.keep_gaps = keep_gaps
-        self.logger = logging.getLogger(__name__)
+    def __init__(
+        self, logger: Logger = log, verbose: bool = False, keep_gaps: bool = False
+    ):
+        self.logger = logger
         self.verbose = verbose
+        self.keep_gaps = keep_gaps
 
     def _process_sequence(self, sequence: Seq) -> Seq:
         """Process sequence based on gap handling preference"""
@@ -64,22 +67,17 @@ class SequenceExtractor:
         full_seq = self._combine_exons(exon_sequences, feature.exons[0].strand)
         return full_seq.translate(to_stop=True)
 
-    def _get_splicing_detail(
-        self, gff_obj: GffDataFrame, row: Series
-    ) -> SplicingInfo | None:
-        if gff_obj.splicing_info:
-            if not hasattr(row, "ID"):
-                raise ValueError(
-                    f"If there are splicing details, the GFF must have an 'ID' column"
-                )
-            splicing_details = [x for x in gff_obj.splicing_info if row.ID == x.gene_id]
-            assert (
-                len(splicing_details) == 1  # sanity check
-            ), f"CDSes can only have one gene, found {len(splicing_details)}"
+    def _get_splicing_detail(self, gff_obj: GffDataFrame, row: Series) -> SplicingInfo:
+        if not hasattr(row, "ID"):
+            raise ValueError(
+                f"If there are splicing details, the GFF must have an 'ID' column"
+            )
+        splicing_details = [x for x in gff_obj.splicing_info if row.ID == x.gene_id]
+        assert (
+            len(splicing_details) == 1  # sanity check
+        ), f"CDSes can only have one gene, found {len(splicing_details)}"
 
-            splicing_detail = splicing_details[0]
-        else:
-            splicing_detail = None
+        splicing_detail = splicing_details[0]
         return splicing_detail
 
     def _get_exons(self, row, splicing_info: SplicingInfo) -> list[ExonData]:
@@ -112,10 +110,22 @@ class SequenceExtractor:
         dict[str, dict[str, Seq]]
             Nested dictionary of sequence IDs and their features' amino acid sequences
         """
-        seq_dict: dict[str, Seq] = {record.id: record.seq for record in seq_records}
-        result: dict[str, dict[str, Seq]] = {record.id: {} for record in seq_records}
 
-        for row in gff_obj.df.itertuples():
+        # This next block is a bit weird, because it would be easier to use 2 dict comprehensions
+        # But SeqRecord objects are not guaranteed to have IDs, so we need to check for that
+        # Besides, now we only need to iterate over the sequence records once
+        seq_dict: dict[str, Seq] = {}
+        for record in seq_records:
+            if record.id is None:
+                raise ValueError("Sequence record ID cannot be None")
+            seq_dict[record.id] = record.seq
+            result: dict[str, dict[str, Seq]] = {}
+            result[record.id] = {}
+
+        assert gff_obj.df is not None, "No dataframe of the GFF loaded"  # sanity check
+
+        # I do not see a way to avoid this for loop, I tried vectorizing it but it became unreadable
+        for _, row in gff_obj.df.iterrows():
             name = getattr(row, "Name", f"ID-{row.seqid}")
 
             splicing_detail = self._get_splicing_detail(gff_obj, row)

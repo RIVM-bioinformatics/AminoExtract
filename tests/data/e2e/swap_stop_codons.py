@@ -3,13 +3,6 @@ import pandas as pd
 with open("tests/data/e2e/complex_input.fa") as f:
     complex_output = f.read()
 
-
-table = pd.read_csv(
-    "tests/data/e2e/complex_input.gff",
-    sep="\t",
-    comment="#",
-    header=None,
-)
 column_names = [
     "seqid",
     "source",
@@ -21,7 +14,14 @@ column_names = [
     "phase",
     "attributes",
 ]
-table.columns = column_names
+table = pd.read_csv(
+    "tests/data/e2e/complex_input.gff",
+    sep="\t",
+    comment="#",
+    header=None,
+    names=column_names,
+)
+
 
 cds_table = table[table["type"] == "CDS"]
 eden1_table = cds_table[cds_table["attributes"].str.contains("Name=edenprotein.1")]
@@ -50,4 +50,3 @@ just_nucl_2 = (
     + "TAA"
     + just_nucl[highest + 4 :]
 )
-...

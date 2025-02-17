@@ -1,26 +1,32 @@
+"""
+Argument parsing for AminoExtract
+"""
+
 import argparse
 import os
-import pathlib
 import re
 import sys
+from pathlib import Path, PurePath
 
 from AminoExtract import __prog__, __version__
 from AminoExtract.functions import QuickArgFormatter, RichParser, log
 
 
 def set_output_type(args: argparse.Namespace) -> argparse.Namespace:
-    args.outtype = 0
+    path = Path(args.output)
 
-    if not pathlib.Path(args.output).suffixes:
+    if path.is_dir():
         log.info(
             f"The given output seems to be a directory.\nAll amino acid sequences will be written to individual files in this directory.\n([cyan]{args.output}[/cyan])"
         )
         args.outtype = 1
         return args
-    log.info(
-        f"The given output seems to be a file.\nAll amino acid sequences will be written to this file.\n([cyan]{args.output}[/cyan])"
-    )
-    return args
+    else:
+        log.info(
+            f"The given output seems to be a file.\nAll amino acid sequences will be written to this file.\n([cyan]{args.output}[/cyan])"
+        )
+        args.outtype = 0
+        return args
 
 
 def check_features(args: argparse.Namespace) -> argparse.Namespace:
@@ -33,7 +39,7 @@ def check_features(args: argparse.Namespace) -> argparse.Namespace:
 
 
 def check_valid_output_filename(args: argparse.Namespace) -> argparse.Namespace:
-    output_ext = pathlib.PurePath(args.output).name
+    output_ext = PurePath(args.output).name
     if not re.match(r"^[\w\-. ]+$", output_ext) or "/." in str(args.output):
         log.error(
             f"'[red]{output_ext}[/red]' does not seem to be a valid filename.\nPlease use only alphanumeric characters, underscores, and dashes."
@@ -44,7 +50,7 @@ def check_valid_output_filename(args: argparse.Namespace) -> argparse.Namespace:
 
 def check_file_ext(
     fname: str | None = None, choices: list[str] | None = None, ftype: str | None = None
-) -> pathlib.Path | None:
+) -> Path | None:
     """Check if the file exists and has a valid extension
 
     Parameters
@@ -62,13 +68,14 @@ def check_file_ext(
 
     """
     if fname is not None and os.path.isfile(fname):
-        ext = "".join(pathlib.Path(fname).suffixes)
+        ext = "".join(Path(fname).suffixes)
+        assert choices is not None, "No choices given"
         if not any(ext.endswith(c) for c in choices):
             log.error(
                 f"{fname} does not have a valid {ftype} file extension.\nPlease use any of the following extensions: [bold]{' '.join(choices)}[/bold]"
             )
             sys.exit(1)
-        return pathlib.Path(fname).resolve()
+        return Path(fname).resolve()
     log.error(f"[green]'{fname}'[/green] is not a file.\n Exiting...")
     sys.exit(1)
 
@@ -123,7 +130,7 @@ def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
     req_args.add_argument(
         "--output",
         "-o",
-        type=lambda s: pathlib.Path(s).absolute(),
+        type=lambda s: Path(s).absolute(),
         metavar="Path",
         help="Output path, either a [underline cyan]file[/underline cyan] or [underline magenta]directory[/underline magenta].\n * If a file path is given, then all amino acid sequences will be written to this file.\n * If a directory path is given, then each amino acid sequence will be written to a separate file in this directory.\n [underline]Please see the docs for more info[/underline]",
         required=True,

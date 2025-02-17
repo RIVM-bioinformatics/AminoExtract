@@ -1,48 +1,53 @@
+"""
+Tests for the SequenceExtractor class and related functions.
+"""
+
 import pandas as pd
 import pytest
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
+from AminoExtract.functions import log
 from AminoExtract.gff_data import SplicingInfo
 from AminoExtract.reader import GffDataFrame
 from AminoExtract.sequences import ExonData, FeatureData, SequenceExtractor
 
 
 @pytest.fixture
-def sequence_extractor():
-    return SequenceExtractor(keep_gaps=False)
+def sequence_extractor() -> SequenceExtractor:
+    return SequenceExtractor(logger=log, verbose=False, keep_gaps=False)
 
 
 @pytest.fixture
-def sample_sequence():
+def sample_sequence() -> Seq:
     return Seq("ATG-CC-TAG")
 
 
 @pytest.fixture
-def sample_seq_dict():
+def sample_seq_dict() -> dict[str, Seq]:
     return {"seq1": Seq("ATGCCCTAGGGG")}
 
 
 @pytest.fixture
-def sample_exon():
+def sample_exon() -> ExonData:
     return ExonData(start=1, end=6, strand="+", phase=0)
 
 
 @pytest.fixture
-def sample_feature():
+def sample_feature() -> FeatureData:
     exon = ExonData(start=1, end=6, strand="+", phase=0)
     return FeatureData(name="gene1", exons=[exon], sequence_id="seq1")
 
 
 @pytest.fixture
-def sample_splicing_info():
+def sample_splicing_info() -> list[SplicingInfo]:
     return [
         SplicingInfo(cds_locations=[(1, 6)], parent_ids={"parent1"}, gene_id="gene1")
     ]
 
 
 @pytest.fixture
-def sample_gff_data():
+def sample_gff_data() -> GffDataFrame:
     data = {
         "seqid": ["seq1"],
         "type": ["gene"],
@@ -59,13 +64,15 @@ def sample_gff_data():
     return gff
 
 
-def test_process_sequence_no_gaps(sequence_extractor, sample_sequence):
+def test_process_sequence_no_gaps(
+    sequence_extractor: SequenceExtractor, sample_sequence: Seq
+) -> None:
     """Test sequence processing with gaps disabled"""
     result = sequence_extractor._process_sequence(sample_sequence)
     assert str(result) == "ATGCCTAG"
 
 
-def test_process_sequence_with_gaps(sample_sequence):
+def test_process_sequence_with_gaps(sample_sequence: Seq) -> None:
     """Test sequence processing with gaps enabled"""
     extractor = SequenceExtractor(keep_gaps=True)
     result = extractor._process_sequence(sample_sequence)
@@ -73,30 +80,35 @@ def test_process_sequence_with_gaps(sample_sequence):
 
 
 def test_extract_single_exon(
-    sequence_extractor, sample_seq_dict, sample_exon, sample_feature
-):
+    sequence_extractor: SequenceExtractor,
+    sample_seq_dict: dict[str, Seq],
+    sample_exon: ExonData,
+    sample_feature: FeatureData,
+) -> None:
     """Test extracting a single exon sequence"""
     result = sequence_extractor._extract_single_exon(
-        sample_seq_dict, sample_exon, sample_feature, 0
+        sample_seq_dict, sample_exon, sample_feature
     )
     assert str(result) == "ATGCCC"  # 1-based to 0-based conversion
 
 
-def test_combine_exons_forward(sequence_extractor):
+def test_combine_exons_forward(sequence_extractor: SequenceExtractor) -> None:
     """Test combining exons on forward strand"""
     sequences = [Seq("ATG"), Seq("CCC"), Seq("TAG")]
     result = sequence_extractor._combine_exons(sequences, "+")
     assert str(result) == "ATGCCCTAG"
 
 
-def test_combine_exons_reverse(sequence_extractor):
+def test_combine_exons_reverse(sequence_extractor: SequenceExtractor) -> None:
     """Test combining exons on reverse strand"""
     sequences = [Seq("ATG"), Seq("CCC"), Seq("TAG")]
     result = sequence_extractor._combine_exons(sequences, "-")
     assert str(result) == "CTAGGGCAT"  # Reverse complement
 
 
-def test_extract_feature(sequence_extractor, sample_seq_dict):
+def test_extract_feature(
+    sequence_extractor: SequenceExtractor, sample_seq_dict: dict[str, Seq]
+) -> None:
     """
     Test complete feature extraction.
 
@@ -118,11 +130,15 @@ def test_extract_feature(sequence_extractor, sample_seq_dict):
     assert str(result) == "CR"  # TGC + AGG
 
 
-def test_get_splicing_detail(sequence_extractor, sample_gff_data, sample_splicing_info):
+def test_get_splicing_detail(
+    sequence_extractor: SequenceExtractor,
+    sample_gff_data: GffDataFrame,
+    sample_splicing_info: list[SplicingInfo],
+) -> None:
     """Test splicing detail extraction"""
 
     sample_gff_data.splicing_info = sample_splicing_info
-
+    assert sample_gff_data.df is not None  # Ensure data is set before test
     row = sample_gff_data.df.iloc[0]
     result = sequence_extractor._get_splicing_detail(sample_gff_data, row)
     assert isinstance(result, SplicingInfo)
@@ -130,8 +146,10 @@ def test_get_splicing_detail(sequence_extractor, sample_gff_data, sample_splicin
 
 
 def test_extract_aminoacids_integration(
-    sequence_extractor, sample_gff_data, sample_splicing_info
-):
+    sequence_extractor: SequenceExtractor,
+    sample_gff_data: GffDataFrame,
+    sample_splicing_info: list[SplicingInfo],
+) -> None:
     """Integration test for complete amino acid extraction"""
     seq_records = [SeqRecord(Seq("ATGCCCTAG"), id="seq1", name="test_seq")]
 

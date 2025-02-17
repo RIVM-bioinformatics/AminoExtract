@@ -1,6 +1,7 @@
 from pathlib import Path
 
-import magic
+# magic has library typing issues
+import magic  # type: ignore
 
 
 class FileUtils:

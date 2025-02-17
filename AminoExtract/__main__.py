@@ -5,12 +5,89 @@ https://github.com/RIVM-bioinformatics/AminoExtract
 """
 
 import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+from Bio.Seq import Seq
 
 from AminoExtract.args import validate_args
 from AminoExtract.filter import GFFRecordFilter, SequenceFilter
+from AminoExtract.functions import log
 from AminoExtract.reader import SequenceReader
-from AminoExtract.sequences import SequenceExtractor
-from AminoExtract.writer import write_aa_file
+from AminoExtract.sequences import GffDataFrame, SequenceExtractor
+from AminoExtract.writer import FastaWriter
+
+
+@dataclass
+class Config:
+    input_fasta: Path
+    input_gff: Path
+    output: Path
+    feature_type: str
+    keep_gaps: bool
+    verbose: bool
+    name: str
+    outtype_int: int
+    outtype: str
+
+    def __post_init__(self) -> None:
+        # 1 is dir, 0 is file
+        if self.outtype_int == 0:
+            self.outtype = "single_file"
+        elif self.outtype_int == 1:
+            self.outtype = "multiple_files"
+        else:
+            raise ValueError(f"Invalid output type: {self.outtype_int}")
+
+
+class AminoAcidExtractor:
+    def __init__(self, config: Config) -> None:
+        self.log = log
+        self.config = config
+        self.reader = SequenceReader(logger=self.log, verbose=config.verbose)
+        self.seq_records = self.reader.read_fasta(config.input_fasta)
+
+    def run(self) -> None:
+        gff_data = self._load_and_filter_gff()
+        sequences = self._extract_sequences(gff_data)
+        self._write_output(sequences)
+
+    def _load_and_filter_gff(self) -> GffDataFrame:
+        gff_obj = self.reader.read_gff(self.config.input_gff)
+
+        gff_filter = GFFRecordFilter(
+            gff_records=gff_obj, logger=self.log, verbose=self.config.verbose
+        )
+        filtered_gff = gff_filter.apply_filters(
+            seq_records=self.seq_records, feature_type=self.config.feature_type
+        )
+
+        if not filtered_gff.validate_dataframe(self.config.feature_type):
+            raise ValueError(
+                "Validation failed, either the GFF file is empty or the feature type is None"
+            )
+        return filtered_gff
+
+    def _extract_sequences(self, gff_data: GffDataFrame) -> dict[str, dict[str, Seq]]:
+        seq_filter = SequenceFilter(
+            seq_records=self.seq_records,
+            logger=self.log,
+            verbose=self.config.verbose,
+        )
+        filtered_seq_records = seq_filter.filter_sequences(gff_data)
+
+        extractor = SequenceExtractor(
+            logger=self.log,
+            verbose=self.config.verbose,
+            keep_gaps=self.config.keep_gaps,
+        )
+        return extractor.extract_aminoacids(
+            gff_obj=gff_data, seq_records=filtered_seq_records
+        )
+
+    def _write_output(self, sequences: dict[str, dict[str, Seq]]) -> None:
+        writer = FastaWriter(output_path=self.config.output, logger=self.log)
+        writer.write(sequences, self.config.name, self.config.outtype)
 
 
 def get_feature_name_attribute(
@@ -36,18 +113,22 @@ def get_feature_name_attribute(
             A dict with the sequence id as the key and a list of the feature names as the value.
 
     """
-    reader = SequenceReader(verbose=False)
-    gff = reader.read_gff(input_gff)
-    seq = reader.read_fasta(input_seq)
+    reader = SequenceReader(log, verbose=False)
+    gff = reader.read_gff(Path(input_gff))
+    seq = reader.read_fasta(Path(input_seq))
 
-    gff_filter = GFFRecordFilter(gff_records=gff, verbose=False)
+    gff_filter = GFFRecordFilter(gff_records=gff, logger=log, verbose=False)
     gff_records = gff_filter.apply_filters(seq_records=seq, feature_type=feature_type)
+    assert gff_records.df is not None, "The GFF file is empty"
 
-    seq_filter = SequenceFilter(seq_records=seq, verbose=False)
+    seq_filter = SequenceFilter(seq_records=seq, logger=log, verbose=False)
     filtered_seqs = seq_filter.filter_sequences(gff_records)
 
-    seq_attributes: dict[str, list[str]] = {record.id: [] for record in filtered_seqs}
+    seq_attributes: dict[str, list[str]] = {
+        record.id: [] for record in filtered_seqs if record.id is not None
+    }
     for row in gff_records.df.itertuples():
+        assert isinstance(row.seqid, str) and isinstance(row.Name, str), "Invalid row"
         seq_attributes[row.seqid].append(row.Name)
     return seq_attributes
 
@@ -80,27 +161,19 @@ def main(provided_args: list[str] | None = None) -> None:
         0: Success
         1: Something went wrong
     """
-    if provided_args:
-        args = validate_args(provided_args)
-    else:
-        args = validate_args(sys.argv[1:])
+    args = validate_args(provided_args if provided_args else sys.argv[1:])
 
-    reader = SequenceReader(verbose=args.verbose)
-    gff_obj = reader.read_gff(args.features)
-    fasta_records = reader.read_fasta(args.input)
-
-    filter = GFFRecordFilter(gff_records=gff_obj, verbose=args.verbose)
-    gff_obj = filter.apply_filters(
-        seq_records=fasta_records, feature_type=args.feature_type
+    config = Config(
+        input_fasta=args.input,
+        input_gff=args.features,
+        output=args.output,
+        feature_type=args.feature_type,
+        keep_gaps=args.keep_gaps,
+        verbose=args.verbose,
+        name=args.name,
+        outtype_int=args.outtype,
+        outtype="",
     )
-    assert gff_obj.validate_dataframe(
-        args.feature_type
-    ), "Validation failed, either the GFF file is empty or the feature type is None"
 
-    seq_filter = SequenceFilter(seq_records=fasta_records, verbose=args.verbose)
-    seq_records = seq_filter.filter_sequences(gff_obj)
-
-    extractor = SequenceExtractor(keep_gaps=args.keep_gaps, verbose=args.verbose)
-    aa_dict = extractor.extract_aminoacids(gff_obj=gff_obj, seq_records=seq_records)
-
-    write_aa_file(aa_dict, args.output, args.name, args.outtype)
+    extractor = AminoAcidExtractor(config)
+    extractor.run()

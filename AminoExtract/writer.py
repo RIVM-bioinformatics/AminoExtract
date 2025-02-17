@@ -1,12 +1,69 @@
 import pathlib
+from logging import Logger
+from pathlib import Path
 
-from Bio import Seq
+from Bio.Seq import Seq
 
 from AminoExtract.functions import log
 
 
+class FastaWriter:
+    def __init__(self, output_path: Path, logger: Logger) -> None:
+        self.output_path = output_path
+        self.logger = logger
+
+    def write(
+        self, sequences: dict[str, dict[str, Seq]], name: str, single_file: str
+    ) -> None:
+        """Write sequences to file(s)"""
+        if single_file == "single_file":
+            self._write_single_file(sequences, name)
+        else:
+            self._write_multiple_files(sequences, name)
+
+    def _write_single_file(
+        self, sequences: dict[str, dict[str, Seq]], name: str
+    ) -> None:
+        """Write all sequences to a single FASTA file"""
+        with self.output_path.open("w") as f:
+            for seq_id, features in sequences.items():
+                for feature, aa in features.items():
+                    self._write_sequence(
+                        f, seq_id=seq_id, feature=feature, sequence=aa, name=name
+                    )
+                    self._log_write(seq_id, feature, self.output_path)
+
+    def _write_multiple_files(
+        self, sequences: dict[str, dict[str, Seq]], name: str
+    ) -> None:
+        """Write each sequence to a separate FASTA file"""
+        self.output_path.mkdir(exist_ok=True)
+
+        for seq_id, features in sequences.items():
+            for feature, aa in features.items():
+                output_file = self.output_path / f"{name}_{feature}.faa"
+                with output_file.open("a") as f:  # 'a' is append mode
+                    self._write_sequence(
+                        f, seq_id=seq_id, feature=feature, sequence=aa, name=name
+                    )
+                    self._log_write(seq_id, feature, output_file)
+
+    def _write_sequence(
+        self, file_handle, seq_id: str, feature: str, sequence: Seq, name: str
+    ) -> None:
+        """Write single sequence in FASTA format"""
+        file_handle.write(f">{name}.{feature}\n{sequence}\n")
+
+    def _log_write(self, seq_id: str, feature: str, filepath: Path) -> None:
+        """Log sequence writing operation"""
+        self.logger.info(
+            f"Writing '[cyan]{seq_id} - {feature}[/cyan]' to "
+            f"'[green]{filepath}[/green]'"
+        )
+
+
 def write_aa_file(
-    AA_dict: dict[str, dict[str, Seq.Seq]],
+    AA_dict: dict[str, dict[str, Seq]],
     output: pathlib.Path,
     name: str,
     outtype: int,
