@@ -1,10 +1,14 @@
 """End-to-end tests for the AminoExtract package."""
 
-import os
+from pathlib import Path
+
+import pytest
+from Bio import BiopythonWarning
 
 # see tests/unit/test_reader.py for explanation
 # pylint: disable=import-error
 from AminoExtract.__main__ import main
+from AminoExtract.version import ROOT_DIR
 
 
 def _order_fasta_by_name(fasta_lines: list[str]) -> list[str]:
@@ -15,7 +19,7 @@ def _order_fasta_by_name(fasta_lines: list[str]) -> list[str]:
     return sorted_fastq
 
 
-def _compare_outputs(output_file: str, expected_output_file: str) -> None:
+def _compare_outputs(output_file: Path, expected_output_file: Path) -> None:
     """Compare the output fasta file with the expected output fasta file."""
     with open(output_file, "r", encoding="utf-8") as output, open(
         expected_output_file, "r", encoding="utf-8"
@@ -35,25 +39,26 @@ def _compare_outputs(output_file: str, expected_output_file: str) -> None:
 class TestE2E:
     """Test class for the end-to-end tests."""
 
+    data_path = ROOT_DIR / "tests" / "data" / "e2e"
+
     def test_e2e_simple(self):
         """A simple end-to-end test for the AminoExtract package."""
-        if os.path.exists("tests/data/e2e/simple_output.fa"):
-            os.remove("tests/data/e2e/simple_output.fa")
+        output_path = self.data_path / "simple_output.fa"
+        if output_path.exists():
+            output_path.unlink()
         args = [
             "-i",
-            "tests/data/e2e/simple_input.fa",
+            str(self.data_path / "simple_input.fa"),
             "-gff",
-            "tests/data/e2e/simple_input.gff",
+            str(self.data_path / "simple_input.gff"),
             "-o",
-            "tests/data/e2e/simple_output.fa",
+            str(output_path),
             "-n",
             "simple_output",
         ]
         main(args)
-        assert os.path.exists("tests/data/e2e/simple_output.fa")
-        _compare_outputs(
-            "tests/data/e2e/simple_output.fa", "tests/data/e2e/simple_output.faa"
-        )
+        assert output_path.exists()
+        _compare_outputs(output_path, self.data_path / "simple_output.faa")
 
     def test_e2e_complex(self):
         """
@@ -64,20 +69,24 @@ class TestE2E:
         Based on the example for here:
         https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md
         """
-        if os.path.exists("tests/data/e2e/complex_output.fa"):
-            os.remove("tests/data/e2e/complex_output.fa")
+        output_path = self.data_path / "complex_output.fa"
+        if output_path.exists():
+            output_path.unlink()
+
         args = [
             "-i",
-            "tests/data/e2e/complex_input.fa",
+            str(self.data_path / "complex_input.fa"),
             "-gff",
-            "tests/data/e2e/complex_input.gff",
+            str(self.data_path / "complex_input.gff"),
             "-o",
-            "tests/data/e2e/complex_output.fa",
+            str(output_path),
             "-n",
             "complex_input",
         ]
-        main(args)
-        assert os.path.exists("tests/data/e2e/complex_output.fa")
-        _compare_outputs(
-            "tests/data/e2e/complex_output.fa", "tests/data/e2e/complex_output.faa"
-        )
+
+        with pytest.warns(BiopythonWarning):
+            # The warning is that the sequence is not divisible by 3, so not a full codon
+            main(args)
+
+        assert output_path.exists()
+        _compare_outputs(output_path, self.data_path / "complex_output.faa")

@@ -151,5 +151,10 @@ class RichParser(ArgumentParser):
     `rich.print` instead of `print`
     """
 
-    def _print_message(self, message: str, file: Optional[IO[str]] = None) -> None:
+    # We ignore the override of the typing of the _file variable because we cannot
+    # add the correct typing (SupportsWrite) because it is internally defined.
+    # We dont use it anyway.
+    def _print_message(
+        self, message: str, _file: Optional[IO[str]] = None  # type: ignore[override]
+    ) -> None:
         return rich.print(message)

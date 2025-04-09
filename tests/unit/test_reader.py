@@ -1,20 +1,21 @@
-""""Unit tests for the reader module of AminoExtract"""
-
-from pathlib import Path
+""" "Unit tests for the reader module of AminoExtract"""
 
 # pylint cannot find modules in subdirectories of a repo
 # https://shorturl.at/AyTL0
 # pylint: disable=import-error
 from AminoExtract import reader
+from AminoExtract.version import ROOT_DIR
 
 
 class TestReader:
     """Test the reader module"""
 
+    data_path = ROOT_DIR / "tests" / "data" / "unit"
+
     def test_basic_gff(self):
         """Test basic GFF file"""
-        gff = reader.GFFDataFrame(inputfile="tests/data/test_reader.gff")
-        assert gff.file_path == Path("tests/data/test_reader.gff")
+        gff = reader.GFFDataFrame(inputfile=self.data_path / "test_reader.gff")
+        assert gff.file_path == self.data_path / "test_reader.gff"
         assert gff.verbose is False
         assert (
             gff.header.raw_text
@@ -27,8 +28,8 @@ class TestReader:
 
     def test_gzipped_gff(self):
         """Test gzipped GFF file"""
-        gff = reader.GFFDataFrame(inputfile="tests/data/test_reader.gff.gz")
-        assert gff.file_path == Path("tests/data/test_reader.gff.gz")
+        gff = reader.GFFDataFrame(inputfile=self.data_path / "test_reader.gff.gz")
+        assert gff.file_path == self.data_path / "test_reader.gff.gz"
         assert gff.verbose is False
         assert (
             gff.header.raw_text
