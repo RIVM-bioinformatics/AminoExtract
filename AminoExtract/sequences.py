@@ -50,9 +50,13 @@ def extract_aminoacids(
 
     """
 
-    log.info(
-        "Extracting and translating the amino acid sequence(s) from the nucleotide sequence(s)"
-    ) if verbose else None
+    (
+        log.info(
+            "Extracting and translating the amino acid sequence(s) from the nucleotide sequence(s)"
+        )
+        if verbose
+        else None
+    )
 
     # create a dictionary with the SeqRecord.id as the key and the SeqRecord.seq as the value
     SeqDict = {record.id: record.seq for record in SeqRecords}
@@ -68,9 +72,13 @@ def extract_aminoacids(
         try:
             name = row.Name
         except AttributeError:
-            log.warn(
-                "No '[green]Name[/green]' attribute found in GFF records. Using '[cyan]ID[/cyan]' instead"
-            ) if verbose else None
+            (
+                log.warn(
+                    "No '[green]Name[/green]' attribute found in GFF records. Using '[cyan]ID[/cyan]' instead"
+                )
+                if verbose
+                else None
+            )
             name = f"ID-{row.ID}"
 
         # get the sequence ID from the row
