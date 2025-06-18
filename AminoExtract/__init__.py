@@ -9,4 +9,4 @@ with contextlib.suppress(ImportError):
     from AminoExtract.__main__ import get_feature_name_attribute, main
     from AminoExtract.filter import filter_gff
     from AminoExtract.reader import GffDataFrame, read_fasta, read_gff
-    from AminoExtract.sequences import extract_aminoacids
+    from AminoExtract.sequences import Reverse_complement, extract_aminoacids

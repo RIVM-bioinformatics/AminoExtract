@@ -1,4 +1,5 @@
 import gzip
+import re
 import sys
 
 import magic
@@ -22,18 +23,23 @@ class GffDataFrame(object):
             self.inputfile = inputfile
             self.log = logger
             self.verbose = verbose
-            self.log.info(
-                f"Parsing GFF input file: '[green]{inputfile}[/green]'"
-            ) if verbose else None
+            (
+                self.log.info(f"Parsing GFF input file: '[green]{inputfile}[/green]'")
+                if verbose
+                else None
+            )
             self._read()
+            self._normalize_attributes()
             self._read_header()
             self.df = _split_attributes_column(self.df) if split_attributes else self.df
         else:
             self.log = log
             self.verbose = verbose
-            self.log.error(
-                f"Input file is not readable: {inputfile}"
-            ) if self.verbose else None
+            (
+                self.log.error(f"Input file is not readable: {inputfile}")
+                if self.verbose
+                else None
+            )
             sys.exit(1)
 
     # def split_attributes_column(self) -> pd.DataFrame:
@@ -61,6 +67,32 @@ class GffDataFrame(object):
         else:
             return self._read_gff_uncompressed()
 
+    def _normalize_attributes(self) -> None:
+        """
+        Normalize the attributes in the GFF data frame.
+
+        This function processes the 'attributes' column of the data frame,
+        ensuring that any attribute containing the word 'name' is normalized
+        to 'Name'.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+
+        def _normalize(attr: str) -> str:
+            r"""
+            \b is a word boundary, so seperates non-word characters from word characters
+            \w* matches any amount of word characters
+            """
+            return re.sub(r"\b\w*name\w*\b", "Name", attr, flags=re.IGNORECASE)
+
+        self.df["attributes"] = self.df["attributes"].apply(_normalize)
+
     def _read_gff_gzipped(self) -> pd.DataFrame:
         self.df = pd.read_csv(
             self.inputfile,
@@ -77,6 +109,17 @@ class GffDataFrame(object):
                 "phase",
                 "attributes",
             ],
+            dtype={
+                "seqid": str,
+                "source": str,
+                "type": str,
+                "start": int,
+                "end": int,
+                "score": object,
+                "strand": str,
+                "phase": str,
+                "attributes": str,
+            },
             compression="gzip",
             keep_default_na=False,
         )
@@ -98,6 +141,17 @@ class GffDataFrame(object):
                 "phase",
                 "attributes",
             ],
+            dtype={
+                "seqid": str,
+                "source": str,
+                "type": str,
+                "start": int,
+                "end": int,
+                "score": object,
+                "strand": str,
+                "phase": str,
+                "attributes": str,
+            },
             keep_default_na=False,
         )
         return self.df
@@ -159,7 +213,19 @@ def _attr_string_to_dict(string: str) -> dict:
     dict
         A dictionary with the key being the attribute name and the value being the attribute value.
     """
-    return dict([x.split("=") for x in string.split(";") if "=" in x])
+
+    def _splitter(string: str, key: str) -> list[str]:
+        return string.replace('"', "").replace("'", "").split(key)
+
+    res_list = []
+    for x in string.split(";"):
+        if "=" in x:
+            res_list.append(_splitter(x, "="))
+        elif " " in x:
+            res_list.append(_splitter(x, " "))
+        else:
+            raise ValueError("Attributes are not separated by '=' or ' '")
+    return dict(res_list)
 
 
 def _is_gzipped(infile: str) -> bool:
