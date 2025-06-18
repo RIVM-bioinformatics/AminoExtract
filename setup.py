@@ -6,7 +6,7 @@ import sys
 
 from setuptools import find_packages, setup
 
-from AminoExtract.version import __prog__, __version__
+from AminoExtract import __prog__, __version__
 
 if sys.version_info.major != 3 or sys.version_info.minor < 10:
     print("Error: you must execute setup.py using Python 3.10 or later")

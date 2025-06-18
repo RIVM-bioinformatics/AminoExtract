@@ -1,4 +1,4 @@
-""""Sequence extraction module for AminoExtract."""
+"""Sequence extraction module for AminoExtract."""
 
 from dataclasses import dataclass
 from logging import Logger

@@ -5,10 +5,11 @@ from pathlib import Path
 import pytest
 from Bio import BiopythonWarning
 
+from AminoExtract import ROOT_DIR
+
 # see tests/unit/test_reader.py for explanation
 # pylint: disable=import-error
 from AminoExtract.__main__ import main
-from AminoExtract.version import ROOT_DIR
 
 
 def _order_fasta_by_name(fasta_lines: list[str]) -> list[str]:

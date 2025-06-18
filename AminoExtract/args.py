@@ -8,8 +8,8 @@ import re
 import sys
 from pathlib import Path, PurePath
 
+from AminoExtract import __prog__, __version__
 from AminoExtract.logging import QuickArgFormatter, RichParser, log
-from AminoExtract.version import __prog__, __version__
 
 # When you log a message with f-strings, you always execute the f-string,
 # even if the log level is not set to display the message.

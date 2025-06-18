@@ -3,8 +3,7 @@
 # pylint cannot find modules in subdirectories of a repo
 # https://shorturl.at/AyTL0
 # pylint: disable=import-error
-from AminoExtract import reader
-from AminoExtract.version import ROOT_DIR
+from AminoExtract import ROOT_DIR, reader
 
 
 class TestReader:

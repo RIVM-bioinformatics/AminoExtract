@@ -22,6 +22,12 @@ License: MIT
 
 # pylint: disable=invalid-name
 import contextlib
+from pathlib import Path
+
+__prog__ = "AminoExtract"
+__version__ = "0.3.1"
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 # use contextlib to suppress the ImportError
 # This may occur when this file is imported in setup.py as dependencies are not yet installed
