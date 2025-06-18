@@ -1,12 +1,38 @@
+"""
+AminoExtract: Extract amino acid sequences from GFF annotations.
+This package provides functionality to parse GFF3 and FASTA files and extract amino
+acid sequences based on CDS features from genomic annotations.
+
+Dependencies
+-----------
+- pandas
+- biopython
+- rich
+- python-magic
+
+
+See Also
+--------
+Documentation: https://github.com/RIVM-bioinformatics/AminoExtract
+
+Notes
+-----
+License: MIT
+"""
+
+# pylint: disable=invalid-name
 import contextlib
+from pathlib import Path
 
 __prog__ = "AminoExtract"
 __version__ = "0.3.1"
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 # use contextlib to suppress the ImportError
 # This may occur when this file is imported in setup.py as dependencies are not yet installed
 with contextlib.suppress(ImportError):
     from AminoExtract.__main__ import get_feature_name_attribute, main
-    from AminoExtract.filter import filter_gff
-    from AminoExtract.reader import GffDataFrame, read_fasta, read_gff
-    from AminoExtract.sequences import Reverse_complement, extract_aminoacids
+    from AminoExtract.filter import GFFRecordFilter
+    from AminoExtract.reader import GFFDataFrame
+    from AminoExtract.sequences import SequenceExtractor

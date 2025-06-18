@@ -1,4 +1,10 @@
+"""
+Setup script for AminoExtract
+"""
+
 import sys
+
+from setuptools import find_packages, setup
 
 from AminoExtract import __prog__, __version__
 
@@ -6,9 +12,8 @@ if sys.version_info.major != 3 or sys.version_info.minor < 10:
     print("Error: you must execute setup.py using Python 3.10 or later")
     sys.exit(1)
 
-from setuptools import find_packages, setup
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
@@ -19,7 +24,10 @@ setup(
     license="MIT",
     author_email="ids-bioinformatics@rivm.nl",
     long_description=long_description,
-    description="AminoExtract is an application to extract aminoacid sequences from a fasta file based on a GFF.",
+    description=(
+        "AminoExtract is an application to "
+        "extract aminoacid sequences from a fasta file based on a GFF."
+    ),
     long_description_content_type="text/markdown",
     python_requires=">=3.10",
     packages=find_packages(),

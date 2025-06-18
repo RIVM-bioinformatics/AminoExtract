@@ -1,6 +1,0 @@
-##gff-version 3
-##sequence-region CY121680.1 1 1752
-seq1	feature	gene	1	15	.	+	.	Name "test1"
-seq2	feature	gene	1	15	.	-	.	Name "test2"
-seq3	feature	gene	1	15	.	+	.	Name "test3"
-seq4	feature	gene	1	15	.	+	.	Name "test4"

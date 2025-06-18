@@ -1,3 +1,5 @@
+"""This module contains the logging configuration and the custom ArgumentParser classes."""
+
 import logging
 import re as _re
 import shutil
@@ -28,10 +30,17 @@ logging.basicConfig(
 log = logging.getLogger("rich")
 
 
-# A subclass of ArgumentParser.RawTextHelpFormatter that fixes spacing in the help text and respects bullet points.
-# Especially useful for multi-line help texts combined with default values.
-# This class is taken, though slightly refactored to better work for Python3, from the 'argparse-formatter' module from davesteele; https://github.com/davesteele/argparse_formatter
-# Direct link to original code: https://github.com/davesteele/argparse_formatter/blob/a15d89a99e20b0cad4c389a2aa490c551cef4f9c/argparse_formatter/flexi_formatter.py
+# FlexiFormatter is a custom ArgumentParser formatter that:
+# 1. Fixes spacing in help text
+# 2. Properly handles bullet points and lists
+# 3. Improves multi-line help text display with default values
+#
+# This implementation is based on the 'argparse-formatter' module by Dave Steele:
+# Original source: https://github.com/davesteele/argparse_formatter
+# Specific file: argparse_formatter/flexi_formatter.py
+# Commit: a15d89a99e20b0cad4c389a2aa490c551cef4f9c
+#
+# The code has been refactored to work better with Python 3 and our specific needs.
 class FlexiFormatter(RawTextHelpFormatter):
     """
     Help message formatter which respects paragraphs and bulleted lists.
@@ -60,7 +69,7 @@ class FlexiFormatter(RawTextHelpFormatter):
         """Split text in to paragraphs of like-indented lines."""
 
         text = textwrap.dedent(text).strip()
-        text = _re.sub("\n\n[\n]+", "\n\n", text)
+        text = _re.sub("\n\n\n+", "\n\n", text)
 
         last_sub_indent = None
         paragraphs = []
@@ -73,7 +82,8 @@ class FlexiFormatter(RawTextHelpFormatter):
             else:
                 paragraphs.append(line)
 
-            last_sub_indent = sub_indent if is_text else None
+            if is_text:
+                last_sub_indent = sub_indent
         return paragraphs
 
     def _para_reformat(self, text, width):
@@ -100,8 +110,12 @@ class FlexiFormatter(RawTextHelpFormatter):
 
 class QuickArgFormatter(FlexiFormatter):
     """
-    A subclass of the `FlexiFormatter` subclass that adjusts the maximum width of the help text in relationship to the width of the terminal.
-    Additionally, adds a default value to the help text if one is provided in the ArgParse constructor.
+    A FlexiFormatter subclass that improves help text formatting.
+
+    This formatter:
+    1. Adjusts the maximum width of help text based on terminal width
+    2. Adds default values to help text when not explicitly mentioned
+    3. Maintains proper alignment and readability of command-line help output
     """
 
     def __init__(self, prog):
@@ -111,8 +125,8 @@ class QuickArgFormatter(FlexiFormatter):
 
     def _get_help_string(self, action):
         """
-        If the default value is not SUPPRESS and the word "default" is not in the help text, then add
-        the default value to the help text
+        If the default value is not SUPPRESS and the word "default" is not in the help text,
+        then add the default value to the help text
         Parameters
         ----------
         action
@@ -137,5 +151,10 @@ class RichParser(ArgumentParser):
     `rich.print` instead of `print`
     """
 
-    def _print_message(self, message: str, file: Optional[IO[str]] = None) -> None:
+    # We ignore the override of the typing of the _file variable because we cannot
+    # add the correct typing (SupportsWrite) because it is internally defined.
+    # We dont use it anyway.
+    def _print_message(
+        self, message: str, _file: Optional[IO[str]] = None  # type: ignore[override]
+    ) -> None:
         return rich.print(message)
