@@ -22,9 +22,10 @@ def _order_fasta_by_name(fasta_lines: list[str]) -> list[str]:
 
 def _compare_outputs(output_file: Path, expected_output_file: Path) -> None:
     """Compare the output fasta file with the expected output fasta file."""
-    with open(output_file, "r", encoding="utf-8") as output, open(
-        expected_output_file, "r", encoding="utf-8"
-    ) as expected_output:
+    with (
+        open(output_file, "r", encoding="utf-8") as output,
+        open(expected_output_file, "r", encoding="utf-8") as expected_output,
+    ):
         output_lines = output.readlines()
         expected_output_lines = expected_output.readlines()
         # the fasta file can be unordered, so we need to sort it by the read name
@@ -91,3 +92,25 @@ class TestE2E:
 
         assert output_path.exists()
         _compare_outputs(output_path, self.data_path / "complex_output.faa")
+
+    def test_e2e_viro(self):
+        """An end-to-end test for the AminoExtract package with a virology example."""
+        output_path = self.data_path / "viro_output.fa"
+        if output_path.exists():
+            output_path.unlink()
+
+        args = [
+            "-i",
+            str(self.data_path / "viro_input.fasta"),
+            "-gff",
+            str(self.data_path / "viro_input.gff"),
+            "-o",
+            str(output_path),
+            "-n",
+            "viro_input",
+        ]
+
+        main(args)
+
+        assert output_path.exists()
+        _compare_outputs(output_path, self.data_path / "viro_output.faa")

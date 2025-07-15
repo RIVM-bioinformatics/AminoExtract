@@ -197,3 +197,33 @@ class SequenceReader:
         if self.verbose:
             self.logger.info(f"Parsing FASTA input file: '[green]{file.name}[/green]'")
         return list(SeqIO.parse(file, "fasta"))
+
+    def combine_gff(self, gff: GFFDataFrame) -> GFFDataFrame:
+        """
+        Combines GFF records by merging overlapping features.
+
+        Parameters
+        ----------
+        gff : GFFDataFrame
+            The GFFDataFrame object to combine.
+
+        Returns
+        -------
+        GFFDataFrame
+            A new GFFDataFrame object with combined records.
+        """
+        if self.verbose:
+            self.logger.info("Combining GFF records")
+
+        if gff.df is None:
+            raise ValueError("The GFF file is empty")
+
+        # Group by seqid and combine overlapping features
+        combined_df = (
+            gff.df.groupby("seqid")
+            .apply(lambda x: x.ffill().bfill().drop_duplicates())
+            .reset_index(drop=True)
+        )
+        gff.df = combined_df
+
+        return gff

@@ -135,6 +135,7 @@ def get_feature_name_attribute(
     """
     reader = SequenceReader(log, verbose=False)
     gff = reader.read_gff(Path(input_gff))
+    gff = reader.combine_gff(gff)
     seq = reader.read_fasta(Path(input_seq))
 
     gff_filter = GFFRecordFilter(gff_records=gff, logger=log, verbose=False)

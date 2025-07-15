@@ -39,6 +39,12 @@ class GFFFilter:
         Get splicing information from a filtered dataframe.
         Attributes are assumed to be parsed.
         """
+        if not "ID" in filtered_df.columns and len(filtered_df) > 1:
+            raise ValueError(
+                "The filtered DataFrame must contain an 'ID' column for splicing information"
+            )
+        if "ID" not in filtered_df.columns:
+            filtered_df["ID"] = filtered_df.index.astype(str)
 
         splicing = filtered_df.groupby("ID").agg(
             {"start": tuple, "end": tuple, "Parent": set}
