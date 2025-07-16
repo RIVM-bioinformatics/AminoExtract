@@ -114,3 +114,25 @@ class TestE2E:
 
         assert output_path.exists()
         _compare_outputs(output_path, self.data_path / "viro_output.faa")
+
+    def test_e2e_issue3(self):
+        """An end-to-end test for the AminoExtract package for issue #3."""
+        output_path = self.data_path / "issue3_output.fa"
+        if output_path.exists():
+            output_path.unlink()
+
+        args = [
+            "-i",
+            str(self.data_path / "test_reference3.fa"),
+            "-gff",
+            str(self.data_path / "test_features3.gff"),
+            "-o",
+            str(output_path),
+            "-n",
+            "issue3_input",
+        ]
+
+        main(args)
+
+        assert output_path.exists()
+        # _compare_outputs(output_path, self.data_path / "issue3_output.faa")

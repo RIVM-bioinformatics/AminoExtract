@@ -39,10 +39,6 @@ class GFFFilter:
         Get splicing information from a filtered dataframe.
         Attributes are assumed to be parsed.
         """
-        if not "ID" in filtered_df.columns and len(filtered_df) > 1:
-            raise ValueError(
-                "The filtered DataFrame must contain an 'ID' column for splicing information"
-            )
         if "ID" not in filtered_df.columns:
             filtered_df["ID"] = filtered_df.index.astype(str)
 
@@ -102,6 +98,12 @@ class GFFRecordFilter:
             self._log_filtering_info(seq_ids, feature_type)
 
         assert seq_ids, "No sequence IDs found in the given SeqRecords"
+
+        if not any(id_ in self.filter.df["seqid"].values for id_ in seq_ids):
+            raise ValueError(
+                "None of the sequence IDs in the SeqRecords are present in the GFF file"
+            )
+
         filtered_df = self.filter.filter_by_seqids(seq_ids, self.filter.df)
         filtered_df = self.filter.filter_by_feature_type(feature_type, filtered_df)
 
