@@ -32,7 +32,11 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 # use contextlib to suppress the ImportError
 # This may occur when this file is imported in setup.py as dependencies are not yet installed
 with contextlib.suppress(ImportError):
-    from AminoExtract.__main__ import get_feature_name_attribute, main
+    from AminoExtract.__main__ import (
+        AminoAcidExtractor,
+        get_feature_name_attribute,
+        main,
+    )
     from AminoExtract.filter import GFFRecordFilter
     from AminoExtract.reader import GFFDataFrame
     from AminoExtract.sequences import SequenceExtractor
