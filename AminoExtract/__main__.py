@@ -59,11 +59,15 @@ class AminoAcidExtractor:
     # as this is a __main__ module, I just want it to run the main function
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config | None = None) -> None:
         self.log = log
-        self.config = config
-        self.reader = SequenceReader(logger=self.log, verbose=config.verbose)
-        self.seq_records = self.reader.read_fasta(config.input_fasta)
+        if not config:
+            print("No config provided. Only reader access available.")
+            self.reader = SequenceReader(logger=self.log, verbose=False)
+        else:
+            self.reader = SequenceReader(logger=self.log, verbose=config.verbose)
+            self.config = config
+            self.seq_records = self.reader.read_fasta(config.input_fasta)
 
     def run(self) -> None:
         """
