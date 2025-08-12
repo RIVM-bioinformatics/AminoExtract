@@ -8,6 +8,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+import pandas as pd
 from Bio.Seq import Seq
 
 from AminoExtract.args import validate_args
@@ -75,17 +76,11 @@ class AminoAcidExtractor:
     def _load_and_filter_gff(self) -> GFFDataFrame:
         gff_obj = self.reader.read_gff(self.config.input_gff)
 
-        gff_filter = GFFRecordFilter(
-            gff_records=gff_obj, logger=self.log, verbose=self.config.verbose
-        )
-        filtered_gff = gff_filter.apply_filters(
-            seq_records=self.seq_records, feature_type=self.config.feature_type
-        )
+        gff_filter = GFFRecordFilter(gff_records=gff_obj, logger=self.log, verbose=self.config.verbose)
+        filtered_gff = gff_filter.apply_filters(seq_records=self.seq_records, feature_type=self.config.feature_type)
 
         if not filtered_gff.validate_dataframe(self.config.feature_type):
-            raise ValueError(
-                "Validation failed, either the GFF file is empty or the feature type is None"
-            )
+            raise ValueError("Validation failed, either the GFF file is empty or the feature type is None")
         return filtered_gff
 
     def _extract_sequences(self, gff_data: GFFDataFrame) -> dict[str, dict[str, Seq]]:
@@ -101,21 +96,18 @@ class AminoAcidExtractor:
             verbose=self.config.verbose,
             keep_gaps=self.config.keep_gaps,
         )
-        return extractor.extract_aminoacids(
-            gff_obj=gff_data, seq_records=filtered_seq_records
-        )
+        return extractor.extract_aminoacids(gff_obj=gff_data, seq_records=filtered_seq_records)
 
     def _write_output(self, sequences: dict[str, dict[str, Seq]]) -> None:
         writer = FastaWriter(output_path=self.config.output, logger=self.log)
         writer.write(sequences, self.config.name, self.config.outtype)
 
 
-def get_feature_name_attribute(
-    input_gff: str, input_seq: str, feature_type: str
-) -> dict[str, list[str]]:
+def get_feature_name_attribute(input_gff: str, input_seq: str, feature_type: str) -> dict[str, list[str]]:
     """
     This function takes a GFF file, a FASTA file and a feature type,
-    and returns a dictionary of the feature names for each sequence in the FASTA file
+    and returns a dictionary of the feature names for each sequence in the FASTA file.
+    Allows
 
     Parameters
     ----------
@@ -144,11 +136,11 @@ def get_feature_name_attribute(
     seq_filter = SequenceFilter(seq_records=seq, logger=log, verbose=False)
     filtered_seqs = seq_filter.filter_sequences(gff_records)
 
-    seq_attributes: dict[str, list[str]] = {
-        record.id: [] for record in filtered_seqs if record.id is not None
-    }
+    seq_attributes: dict[str, list[str]] = {record.id: [] for record in filtered_seqs if record.id is not None}
     for row in gff_records.df.itertuples():
-        assert isinstance(row.seqid, str) and isinstance(row.Name, str), "Invalid row"
+        assert isinstance(row.seqid, str) and (
+            isinstance(row.Name, str) or pd.isna(row.Name)
+        ), f"Invalid row({row}): seqid needs to be a str and is {type(row.seqid)}, Name needs to be a str or NaN and is {type(row.Name)}"
         seq_attributes[row.seqid].append(row.Name)
     return seq_attributes
 

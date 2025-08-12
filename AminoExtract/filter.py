@@ -26,9 +26,7 @@ class GFFFilter:
         """Filter GFF records of the GFFFilter class objext by some sequence IDs"""
         return df[df["seqid"].isin(seq_ids)]
 
-    def filter_by_feature_type(
-        self, feature_type: str, df: pd.DataFrame
-    ) -> pd.DataFrame:
+    def filter_by_feature_type(self, feature_type: str, df: pd.DataFrame) -> pd.DataFrame:
         """Filter GFF records of the GFFFilter class object by some feature type"""
         if feature_type == "all":
             return df
@@ -39,21 +37,21 @@ class GFFFilter:
         Get splicing information from a filtered dataframe.
         Attributes are assumed to be parsed.
         """
+        if "ID" in filtered_df.columns:
+            id_col = "ID"
+        elif "seqid" in filtered_df.columns:
+            id_col = "seqid"
+        else:
+            raise ValueError("No valid ID column found")
 
-        splicing = filtered_df.groupby("ID").agg(
-            {"start": tuple, "end": tuple, "Parent": set}
-        )
+        splicing = filtered_df.groupby(id_col).agg({"start": tuple, "end": tuple, "Parent": set})
 
         start_lengths = splicing["start"].apply(len)
         end_lengths = splicing["end"].apply(len)
         if not start_lengths.eq(end_lengths).all():  # sanity check
-            raise ValueError(
-                "There should be an equal amount coding start locations as coding end locations"
-            )
+            raise ValueError("There should be an equal amount coding start locations as coding end locations")
 
-        splicing["CDSes"] = splicing.apply(
-            lambda x: list(zip(x["start"], x["end"])), axis=1
-        )
+        splicing["CDSes"] = splicing.apply(lambda x: list(zip(x["start"], x["end"])), axis=1)
 
         # Im using cast here to tell mypy that the types are correct
         # This is necessary because if you access a row in a DataFrame, it returns as an Any object
@@ -74,18 +72,14 @@ class GFFRecordFilter:
     # so it only has one method
     # pylint: disable=too-few-public-methods
 
-    def __init__(
-        self, gff_records: GFFDataFrame, logger: Logger, verbose: bool = False
-    ) -> None:
+    def __init__(self, gff_records: GFFDataFrame, logger: Logger, verbose: bool = False) -> None:
         self.gff_records = gff_records
         assert gff_records.df is not None, "GFF records are empty"
         self.logger = logger
         self.filter = GFFFilter(gff_records.df, self.logger, verbose)
         self.verbose = verbose
 
-    def apply_filters(
-        self, seq_records: list[SeqRecord], feature_type: str
-    ) -> GFFDataFrame:
+    def apply_filters(self, seq_records: list[SeqRecord], feature_type: str) -> GFFDataFrame:
         """
         Applies filters to sequences based on sequence IDs and feature types
         and stores them as a GFFDataFrame object.
@@ -120,9 +114,7 @@ class SequenceFilter:
     # but all the other classes are classes and I wanted to keep it consistent
     # pylint: disable=too-few-public-methods
 
-    def __init__(
-        self, seq_records: list[SeqRecord], logger: Logger, verbose: bool = False
-    ) -> None:
+    def __init__(self, seq_records: list[SeqRecord], logger: Logger, verbose: bool = False) -> None:
         self.seq_records = seq_records
         self.logger = logger
         self.verbose = verbose
