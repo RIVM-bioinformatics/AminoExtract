@@ -141,6 +141,9 @@ def get_feature_name_attribute(input_gff: str, input_seq: str, feature_type: str
     filtered_seqs = seq_filter.filter_sequences(gff_records)
 
     seq_attributes: dict[str, list[str]] = {record.id: [] for record in filtered_seqs if record.id is not None}
+
+    if not "Name" in gff_records.df.columns:
+        gff_records.df["Name"] = pd.NA
     for row in gff_records.df.itertuples():
         assert isinstance(row.seqid, str) and (
             isinstance(row.Name, str) or pd.isna(row.Name)
