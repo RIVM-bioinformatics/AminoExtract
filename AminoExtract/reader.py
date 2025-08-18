@@ -34,15 +34,14 @@ class AttributeParser:
             and the value being the attribute value.
         """
 
-        attr_string_without_quotes = (
-            attr_string.replace('"', "").replace("'", "").strip()
-        )
+        attr_string_without_quotes = attr_string.replace('"', "").replace("'", "").strip()
 
         try:
-            pairs = [
-                pair.split("=") if "=" in pair else pair.split(" ")
-                for pair in attr_string_without_quotes.split(";")
-            ]
+            pairs = [pair.split("=") if "=" in pair else pair.split(" ") for pair in attr_string_without_quotes.split(";")]
+            for x in pairs:
+                if len(x) == 1:
+                    pairs.remove(x)
+                    print(f"Removed {x} because it is not a key-value pair")
         except ValueError as e:
             raise ValueError(f"{attr_string} is not separated by '=' or ' '") from e
 
@@ -93,9 +92,7 @@ class GFFDataFrame:
     def _read_gff_data(self) -> pd.DataFrame:
         # compression must be in dict format
         # https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html
-        compression = (
-            {"method": "gzip"} if FileUtils.is_gzipped(self.file_path) else None
-        )
+        compression = {"method": "gzip"} if FileUtils.is_gzipped(self.file_path) else None
         return pd.read_csv(
             self.file_path,
             sep="\t",
@@ -109,11 +106,7 @@ class GFFDataFrame:
     def _process_attributes(self) -> None:
         if self.df is None:
             return
-        self.df["attributes"] = (
-            self.df["attributes"]
-            .apply(AttributeParser.normalize_name_attribute)
-            .apply(AttributeParser.parse_attributes)
-        )
+        self.df["attributes"] = self.df["attributes"].apply(AttributeParser.normalize_name_attribute).apply(AttributeParser.parse_attributes)
         self._expand_attributes()
 
     def _expand_attributes(self) -> None:
