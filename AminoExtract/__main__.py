@@ -80,6 +80,10 @@ class AminoAcidExtractor:
     def _load_and_filter_gff(self) -> GFFDataFrame:
         gff_obj = self.reader.read_gff(self.config.input_gff)
 
+        assert isinstance(gff_obj.df, pd.DataFrame), "Something went horribly wrong"
+        if gff_obj.df.empty:
+            raise ValueError("GFF file is empty")
+
         gff_filter = GFFRecordFilter(gff_records=gff_obj, logger=self.log, verbose=self.config.verbose)
         filtered_gff = gff_filter.apply_filters(seq_records=self.seq_records, feature_type=self.config.feature_type)
 

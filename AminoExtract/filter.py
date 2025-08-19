@@ -45,6 +45,8 @@ class GFFFilter:
             raise ValueError("No valid ID column found")
 
         splicing = filtered_df.groupby(id_col).agg({"start": tuple, "end": tuple, "Parent": set})
+        if splicing.empty:
+            return []
 
         start_lengths = splicing["start"].apply(len)
         end_lengths = splicing["end"].apply(len)
