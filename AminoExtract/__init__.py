@@ -38,5 +38,5 @@ with contextlib.suppress(ImportError):
         main,
     )
     from AminoExtract.filter import GFFRecordFilter
-    from AminoExtract.reader import GFFDataFrame
+    from AminoExtract.reader import GFFDataFrame, SequenceReader
     from AminoExtract.sequences import SequenceExtractor
