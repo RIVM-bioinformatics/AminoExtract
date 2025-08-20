@@ -148,15 +148,12 @@ class GFFDataFrame:
             return False
         return True
 
-    def write_out_gff_file(self, path: str) -> None:
+    def export_gff_to_file(self, path: str) -> None:
         """
         Writes out the df to a gff file according to the GFF3 spec.
         This means the combined attributes column is included, but the individual attribute columns are not.
         """
-        if self.df is None or self.df.empty:
-            self.logger.warning("The GFF file is empty, nothing to write out.")
-            return
-
+        assert self.df is not None, "DataFrame must be set before writing out GFF file"
         output_df = self.df[["seqid", "source", "type", "start", "end", "score", "strand", "phase", "attributes"]]
 
         with open(path, "w", encoding="utf-8") as f:
