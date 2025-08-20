@@ -106,7 +106,10 @@ class GFFDataFrame:
     def _process_attributes(self) -> None:
         if self.df is None:
             return
-        self.df["attributes"] = self.df["attributes"].apply(AttributeParser.normalize_name_attribute).apply(AttributeParser.parse_attributes)
+        self.df["attributes"] = self.df["attributes"].apply(AttributeParser.normalize_name_attribute)
+
+        # parsing and expanding make significant changes to the attributes column,
+        # this makes it unable to be written back to the original GFF format
         self._expand_attributes()
 
     def _expand_attributes(self) -> None:
@@ -114,8 +117,10 @@ class GFFDataFrame:
         if self.df is None:
             return
 
+        self.df["parsed_attributes"] = self.df["attributes"].apply(AttributeParser.parse_attributes)
+
         existing_cols = set(self.df.columns)
-        attr_df = pd.DataFrame(self.df["attributes"].tolist())
+        attr_df = pd.DataFrame(self.df["parsed_attributes"].tolist())
 
         # Only add new columns
         new_cols = [col for col in attr_df.columns if col not in existing_cols]
@@ -127,7 +132,7 @@ class GFFDataFrame:
         if "Parent" not in self.df.columns:
             self.df["Parent"] = None
 
-        self.df.drop("attributes", axis=1, inplace=True)
+        self.df.drop(columns=["parsed_attributes"], inplace=True)
 
     def validate_dataframe(self, feature_type: str | None = None) -> bool:
         """Returns True if the dataframe is not empty and the feature type is not None"""
@@ -142,6 +147,19 @@ class GFFDataFrame:
             )
             return False
         return True
+
+    def write_out_gff_file(self, path: str) -> None:
+        """
+        Writes out the df to a gff file according to the GFF3 spec.
+        This means the combined attributes column is included, but the individual attribute columns are not.
+        """
+        if self.df is None or self.df.empty:
+            self.logger.warning("The GFF file is empty, nothing to write out.")
+            return
+
+        output_df = self.df[["seqid", "source", "type", "start", "end", "score", "strand", "phase", "attributes"]]
+
+        output_df.to_csv(path, sep="\t", index=False)
 
 
 class SequenceReader:
