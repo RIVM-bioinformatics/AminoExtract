@@ -45,11 +45,15 @@ class GFFHeader:
         This method should be used in a context manager to ensure the file is closed properly.
 
         """
-        return (
-            gzip.open(path, "rt", encoding="utf-8")
-            if FileUtils.is_gzipped(path)
-            else open(path, "rt", encoding="utf-8")
-        )
+        return gzip.open(path, "rt", encoding="utf-8") if FileUtils.is_gzipped(path) else open(path, "rt", encoding="utf-8")
+
+    def export_header_text(self) -> str:
+        """Export the header text of the GFF file, ending with a newline"""
+        if not self.raw_text:
+            return ""
+        if not self.raw_text.endswith("\n"):
+            self.raw_text += "\n"
+        return self.raw_text
 
 
 class GFFColumns(Enum):
