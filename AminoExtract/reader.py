@@ -159,7 +159,7 @@ class GFFDataFrame:
 
         output_df = self.df[["seqid", "source", "type", "start", "end", "score", "strand", "phase", "attributes"]]
 
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             assert self.header is not None, "Header must be set before writing out GFF file"
             f.write(self.header.export_header_text())
             f.write(output_df.to_csv(sep="\t", index=False))
