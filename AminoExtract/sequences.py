@@ -34,9 +34,7 @@ class FeatureData:
 class SequenceExtractor:
     """Extract amino acid sequences from sequence records based on GFF annotations."""
 
-    def __init__(
-        self, logger: Logger = log, verbose: bool = False, keep_gaps: bool = False
-    ) -> None:
+    def __init__(self, logger: Logger = log, verbose: bool = False, keep_gaps: bool = False) -> None:
         self.logger = logger
         self.verbose = verbose
         self.keep_gaps = keep_gaps
@@ -68,33 +66,27 @@ class SequenceExtractor:
 
     def extract_feature(self, feature: FeatureData, seq_dict: dict[str, Seq]) -> Seq:
         """Extract and translate sequence for a single feature"""
-        exon_sequences = [
-            self._extract_single_exon(seq_dict, exon, feature) for exon in feature.exons
-        ]
+        exon_sequences = [self._extract_single_exon(seq_dict, exon, feature) for exon in feature.exons]
 
         full_seq = self._combine_exons(exon_sequences, feature.exons[0].strand)
         return full_seq.translate(to_stop=True)
 
     def _get_splicing_detail(self, gff_obj: GFFDataFrame, row: Series) -> SplicingInfo:
         if not hasattr(row, "ID"):
-            raise ValueError(
-                "If there are splicing details, the GFF must have an 'ID' column"
-            )
+            if not hasattr(row, "seqid"):
+                raise ValueError("If there are splicing details, the GFF must have an 'ID' column")
+            else:
+                row["ID"] = row.seqid
         assert gff_obj.splicing_info is not None, "No splicing information loaded"
         splicing_details = [x for x in gff_obj.splicing_info if row.ID == x.gene_id]
-        assert (
-            len(splicing_details) == 1  # sanity check
-        ), f"CDSes can only have one gene, found {len(splicing_details)}"
+        assert len(splicing_details) == 1, f"CDSes can only have one gene, found {len(splicing_details)}"  # sanity check
 
         splicing_detail = splicing_details[0]
         return splicing_detail
 
     def _get_exons(self, row, splicing_info: SplicingInfo) -> list[ExonData]:
         """Extract exon information from GFF row"""
-        return [
-            ExonData(cds[0], cds[1], row.strand, getattr(row, "phase", 0))
-            for cds in splicing_info.cds_locations
-        ]
+        return [ExonData(cds[0], cds[1], row.strand, getattr(row, "phase", 0)) for cds in splicing_info.cds_locations]
 
     def extract_aminoacids(
         self,
@@ -145,8 +137,6 @@ class SequenceExtractor:
                 exons=self._get_exons(row, splicing_detail),
             )
 
-            result[feature.sequence_id][feature.name] = self.extract_feature(
-                feature, seq_dict
-            )
+            result[feature.sequence_id][feature.name] = self.extract_feature(feature, seq_dict)
 
         return result
