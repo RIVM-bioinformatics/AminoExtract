@@ -41,7 +41,6 @@ class AttributeParser:
             for x in pairs:
                 if len(x) == 1:
                     pairs.remove(x)
-                    print(f"Removed {x} because it is not a key-value pair")
         except ValueError as e:
             raise ValueError(f"{attr_string} is not separated by '=' or ' '") from e
 
@@ -49,11 +48,23 @@ class AttributeParser:
 
     @staticmethod
     def normalize_name_attribute(attr: str) -> str:
-        r"""
-        \b is a word boundary, so seperates non-word characters from word characters
-        \w* matches any amount of word characters
         """
-        return re.sub(r"\b\w*name\w*\b", "Name", attr, flags=re.IGNORECASE)
+        Checks if there is a 'Name' like attribute in the GFF attributes.
+        If there is, it normalizes it to 'Name'.
+        If there is not, copy the 'gene_name' like attribute to 'Name'.
+        If there is also not a gene_name attribute, copy the 'id' like attribute to 'Name'.
+        If there is still nothing, copy the 'seqid' like attribute to 'Name'.
+        Else leave empty, it will turn in pd.NA later
+        """
+        if re.search(r"\bname\b", attr, flags=re.IGNORECASE):
+            attr = re.sub(r"\bname\b", "Name", attr, flags=re.IGNORECASE)
+        elif match := re.search(r"\bgene_name=([^;]+)", attr, flags=re.IGNORECASE):
+            attr += f";Name={match.group(1)}"
+        elif match := re.search(r"\bid=([^;]+)", attr, flags=re.IGNORECASE):
+            attr += f";Name={match.group(1)}"
+        elif match := re.search(r"\bseqid=([^;]+)", attr, flags=re.IGNORECASE):
+            attr += f";Name={match.group(1)}"
+        return attr
 
 
 class GFFDataFrame:
