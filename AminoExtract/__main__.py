@@ -34,21 +34,6 @@ class Config:
     keep_gaps: bool
     verbose: bool
     name: str
-    outtype_int: int
-    outtype: str
-
-    def __post_init__(self) -> None:
-        """
-        Add a string representation of the output type.
-        This makes it easier to use the output type in the FastaWriter.
-        """
-        # 1 is dir, 0 is file
-        if self.outtype_int == 0:
-            self.outtype = "single_file"
-        elif self.outtype_int == 1:
-            self.outtype = "multiple_files"
-        else:
-            raise ValueError(f"Invalid output type: {self.outtype_int}")
 
 
 class AminoAcidExtractor:
@@ -104,7 +89,7 @@ class AminoAcidExtractor:
 
     def _write_output(self, sequences: dict[str, dict[str, Seq]]) -> None:
         writer = FastaWriter(output_path=self.config.output, logger=self.log)
-        writer.write(sequences, self.config.name, self.config.outtype)
+        writer.write(sequences, self.config.name)
 
 
 def get_feature_name_attribute(input_gff: str, input_seq: str, feature_type: str) -> dict[str, list[str]]:
@@ -200,8 +185,6 @@ def main(provided_args: list[str] | None = None) -> None:
         keep_gaps=args.keep_gaps,
         verbose=args.verbose,
         name=args.name,
-        outtype_int=args.outtype,
-        outtype="",
     )
 
     extractor = AminoAcidExtractor(config)
