@@ -142,14 +142,24 @@ def get_feature_name_attribute(input_gff: str, input_seq: str, feature_type: str
 
     seq_attributes: dict[str, list[str]] = {record.id: [] for record in filtered_seqs if record.id is not None}
 
-    if not "Name" in gff_records.df.columns:
+    valid_name_type_columns = ["Name", "gene", "ID"]
+    name_type_col = next((col for col in valid_name_type_columns if col in gff_records.df.columns), None)
+    if name_type_col is None:
         gff_records.df["Name"] = pd.NA
+        name_type_col = "Name"
     for row in gff_records.df.itertuples():
+        value = getattr(row, name_type_col)
+
         assert isinstance(row.seqid, str) and (
-            isinstance(row.Name, str) or pd.isna(row.Name)
-        ), f"Invalid row({row}): seqid needs to be a str and is {type(row.seqid)}, Name needs to be a str or NaN and is {type(row.Name)}"
-        seq_attributes[row.seqid].append(row.Name)
-    return seq_attributes
+            isinstance(value, str) or pd.isna(value)
+        ), f"Invalid row({row}): seqid needs to be a str and is {type(row.seqid)}, Name needs to be a str or NaN and is {type(value)}"
+        seq_attributes[row.seqid].append(value)
+
+    new_seq_attr = {}
+    for k, v in seq_attributes.items():
+        new_seq_attr[k] = [x for x in v if not pd.isna(x)]
+
+    return new_seq_attr
 
 
 def main(provided_args: list[str] | None = None) -> None:
