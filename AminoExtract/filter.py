@@ -32,19 +32,12 @@ class GFFFilter:
             return df
         return df[df["type"] == feature_type]
 
-    def get_splicing_info(self, filtered_df: pd.DataFrame) -> list[SplicingInfo]:
+    def get_splicing_info(self, filtered_df: pd.DataFrame, unique_col_name: str) -> list[SplicingInfo]:
         """
         Get splicing information from a filtered dataframe.
         Attributes are assumed to be parsed.
         """
-        if "ID" in filtered_df.columns:
-            id_col = "ID"
-        elif "seqid" in filtered_df.columns:
-            id_col = "seqid"
-        else:
-            raise ValueError("No valid ID column found")
-
-        splicing = filtered_df.groupby(id_col).agg({"start": tuple, "end": tuple, "Parent": set})
+        splicing = filtered_df.groupby(unique_col_name).agg({"start": tuple, "end": tuple, "Parent": set})
 
         start_lengths = splicing["start"].apply(len)
         end_lengths = splicing["end"].apply(len)
@@ -79,7 +72,7 @@ class GFFRecordFilter:
         self.filter = GFFFilter(gff_records.df, self.logger, verbose)
         self.verbose = verbose
 
-    def apply_filters(self, seq_records: list[SeqRecord], feature_type: str) -> GFFDataFrame:
+    def apply_filters(self, seq_records: list[SeqRecord], feature_type: str, unique_col_name: str) -> GFFDataFrame:
         """
         Applies filters to sequences based on sequence IDs and feature types
         and stores them as a GFFDataFrame object.
@@ -94,7 +87,7 @@ class GFFRecordFilter:
         filtered_df = self.filter.filter_by_feature_type(feature_type, filtered_df)
 
         self.gff_records.df = filtered_df
-        self.gff_records.splicing_info = self.filter.get_splicing_info(filtered_df)
+        self.gff_records.splicing_info = self.filter.get_splicing_info(filtered_df, unique_col_name)
 
         return self.gff_records
 

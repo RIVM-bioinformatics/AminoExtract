@@ -72,27 +72,26 @@ class SequenceExtractor:
         return full_seq.translate(to_stop=True)
 
     def _get_splicing_detail(self, gff_obj: GFFDataFrame, row: Series) -> SplicingInfo:
-        if not hasattr(row, "ID"):
-            if not hasattr(row, "seqid"):
-                raise ValueError("If there are splicing details, the GFF must have an 'ID' column")
-            else:
-                row["ID"] = row.seqid
-        assert gff_obj.splicing_info is not None, "No splicing information loaded"
-        splicing_details = [x for x in gff_obj.splicing_info if row.ID == x.gene_id]
-        assert len(splicing_details) == 1, f"CDSes can only have one gene, found {len(splicing_details)}"  # sanity check
+        """
+        Retrieve splicing details for a GFF row, using available identifiers.
+        It needs to find a unique identifier, so it tries ID and gene first.
+        seqid is a fallback because most GFF files have them, but it is not unique so it wont split features.
+        """
+        gene_id = getattr(row, "ID", None) or getattr(row, "gene", None) or getattr(row, "seqid", None)
+        if gene_id is None:
+            raise ValueError("Row must have an 'ID', 'gene', or 'seqid' attribute for splicing details.")
 
-        splicing_detail = splicing_details[0]
-        return splicing_detail
+        assert gff_obj.splicing_info is not None, "No splicing information loaded"
+        splicing_details = [x for x in gff_obj.splicing_info if gene_id == x.gene_id]
+        if len(splicing_details) != 1:
+            raise ValueError(f"Expected one splicing detail for gene_id '{gene_id}', found {len(splicing_details)}")
+        return splicing_details[0]
 
     def _get_exons(self, row, splicing_info: SplicingInfo) -> list[ExonData]:
         """Extract exon information from GFF row"""
         return [ExonData(cds[0], cds[1], row.strand, getattr(row, "phase", 0)) for cds in splicing_info.cds_locations]
 
-    def extract_aminoacids(
-        self,
-        gff_obj: GFFDataFrame,
-        seq_records: list[SeqRecord],
-    ) -> dict[str, dict[str, Seq]]:
+    def extract_aminoacids(self, gff_obj: GFFDataFrame, seq_records: list[SeqRecord], unique_col_name: str) -> dict[str, dict[str, Seq]]:
         """Extract amino acid sequences from sequence records based on GFF annotations.
 
         Parameters
@@ -127,7 +126,7 @@ class SequenceExtractor:
 
         # I do not see a way to avoid this for loop, I tried vectorizing it but it became unreadable
         for _, row in gff_obj.df.iterrows():
-            name = getattr(row, "Name", f"ID-{row.seqid}")
+            name = getattr(row, "Name", f"ID-{row.seqid}-{getattr(row, unique_col_name, 'unknown')}")
 
             splicing_detail = self._get_splicing_detail(gff_obj, row)
 

@@ -109,3 +109,23 @@ class TestE2E:
         main(args)
         assert output_path.exists()
         _compare_outputs(output_path, self.data_path / "sars_wuhan_output.faa")
+
+    def test_e2e_error2(self):
+        """End-to-end test for the SARS-CoV-2 error from 2025-09-03."""
+        output_path = self.data_path / "error2.fa"
+        if output_path.exists():
+            output_path.unlink()
+
+        args = [
+            "-i",
+            str(self.data_path / "error2_input.fa"),
+            "-gff",
+            str(self.data_path / "error2_input.gff"),
+            "-o",
+            str(output_path),
+            "-n",
+            "error2",
+        ]
+        main(args)
+        assert output_path.exists()
+        _compare_outputs(output_path, self.data_path / "error2.faa")

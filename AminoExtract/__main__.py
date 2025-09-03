@@ -61,6 +61,7 @@ class AminoAcidExtractor:
 
     def __init__(self, config: Config | None = None) -> None:
         self.log = log
+        self.unique_col_name = ""
         if not config:
             print("No config provided. Only reader access available.")
             self.reader = SequenceReader(logger=self.log, verbose=False)
@@ -77,11 +78,24 @@ class AminoAcidExtractor:
         sequences = self._extract_sequences(gff_data)
         self._write_output(sequences)
 
+    def _get_unique_col_name(self, gff: GFFDataFrame) -> None:
+        if "ID" in gff.df.columns:
+            self.unique_col_name = "ID"
+        elif "gene" in gff.df.columns:
+            self.unique_col_name = "gene"
+        elif "seqid" in gff.df.columns:
+            self.unique_col_name = "seqid"
+        else:
+            raise ValueError("No valid unique column found in GFF DataFrame.")
+
     def _load_and_filter_gff(self) -> GFFDataFrame:
         gff_obj = self.reader.read_gff(self.config.input_gff)
+        self._get_unique_col_name(gff_obj)
 
         gff_filter = GFFRecordFilter(gff_records=gff_obj, logger=self.log, verbose=self.config.verbose)
-        filtered_gff = gff_filter.apply_filters(seq_records=self.seq_records, feature_type=self.config.feature_type)
+        filtered_gff = gff_filter.apply_filters(
+            seq_records=self.seq_records, feature_type=self.config.feature_type, unique_col_name=self.unique_col_name
+        )
 
         if not filtered_gff.validate_dataframe(self.config.feature_type):
             raise ValueError("Validation failed, either the GFF file is empty or the feature type is None")
@@ -100,7 +114,7 @@ class AminoAcidExtractor:
             verbose=self.config.verbose,
             keep_gaps=self.config.keep_gaps,
         )
-        return extractor.extract_aminoacids(gff_obj=gff_data, seq_records=filtered_seq_records)
+        return extractor.extract_aminoacids(gff_obj=gff_data, seq_records=filtered_seq_records, unique_col_name=self.unique_col_name)
 
     def _write_output(self, sequences: dict[str, dict[str, Seq]]) -> None:
         writer = FastaWriter(output_path=self.config.output, logger=self.log)
