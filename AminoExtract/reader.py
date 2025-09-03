@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 from Bio import SeqIO
+from Bio.SeqIO.FastaIO import SeqRecord
 
 from AminoExtract.file_utils import FileUtils
 from AminoExtract.gff_data import GFFColumns, GFFHeader, SplicingInfo
@@ -200,7 +201,7 @@ class SequenceReader:
         """
         return GFFDataFrame(inputfile=file, logger=self.logger, verbose=self.verbose)
 
-    def read_fasta(self, file: Path) -> list:
+    def read_fasta(self, file: Path) -> list[SeqRecord]:
         """
         Reads a FASTA file and returns a list of SeqRecord objects
 

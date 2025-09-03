@@ -61,7 +61,6 @@ class AminoAcidExtractor:
 
     def __init__(self, config: Config | None = None) -> None:
         self.log = log
-        self.unique_col_name = ""
         if not config:
             print("No config provided. Only reader access available.")
             self.reader = SequenceReader(logger=self.log, verbose=False)
@@ -75,33 +74,35 @@ class AminoAcidExtractor:
         First load and filter the GFF file, then extract the sequences and write the output.
         """
         gff_data = self._load_and_filter_gff()
-        sequences = self._extract_sequences(gff_data)
+        unique_column_name = self.get_unique_col_name(gff_data)
+        sequences = self._extract_sequences(gff_data, unique_column_name)
         self._write_output(sequences)
 
-    def _get_unique_col_name(self, gff: GFFDataFrame) -> None:
+    @staticmethod
+    def get_unique_col_name(gff: GFFDataFrame) -> str:
         if "ID" in gff.df.columns:
-            self.unique_col_name = "ID"
+            return "ID"
         elif "gene" in gff.df.columns:
-            self.unique_col_name = "gene"
+            return "gene"
         elif "seqid" in gff.df.columns:
-            self.unique_col_name = "seqid"
+            return "seqid"
         else:
             raise ValueError("No valid unique column found in GFF DataFrame.")
 
     def _load_and_filter_gff(self) -> GFFDataFrame:
         gff_obj = self.reader.read_gff(self.config.input_gff)
-        self._get_unique_col_name(gff_obj)
+        unique_column_name = self.get_unique_col_name(gff_obj)
 
         gff_filter = GFFRecordFilter(gff_records=gff_obj, logger=self.log, verbose=self.config.verbose)
         filtered_gff = gff_filter.apply_filters(
-            seq_records=self.seq_records, feature_type=self.config.feature_type, unique_col_name=self.unique_col_name
+            seq_records=self.seq_records, feature_type=self.config.feature_type, unique_col_name=unique_column_name
         )
 
         if not filtered_gff.validate_dataframe(self.config.feature_type):
             raise ValueError("Validation failed, either the GFF file is empty or the feature type is None")
         return filtered_gff
 
-    def _extract_sequences(self, gff_data: GFFDataFrame) -> dict[str, dict[str, Seq]]:
+    def _extract_sequences(self, gff_data: GFFDataFrame, unique_column_name: str) -> dict[str, dict[str, Seq]]:
         seq_filter = SequenceFilter(
             seq_records=self.seq_records,
             logger=self.log,
@@ -114,7 +115,7 @@ class AminoAcidExtractor:
             verbose=self.config.verbose,
             keep_gaps=self.config.keep_gaps,
         )
-        return extractor.extract_aminoacids(gff_obj=gff_data, seq_records=filtered_seq_records, unique_col_name=self.unique_col_name)
+        return extractor.extract_aminoacids(gff_obj=gff_data, seq_records=filtered_seq_records, unique_col_name=unique_column_name)
 
     def _write_output(self, sequences: dict[str, dict[str, Seq]]) -> None:
         writer = FastaWriter(output_path=self.config.output, logger=self.log)
@@ -147,8 +148,10 @@ def get_feature_name_attribute(input_gff: str, input_seq: str, feature_type: str
     gff = reader.read_gff(Path(input_gff))
     seq = reader.read_fasta(Path(input_seq))
 
+    unique_col_name = AminoAcidExtractor.get_unique_col_name(gff)
+
     gff_filter = GFFRecordFilter(gff_records=gff, logger=log, verbose=False)
-    gff_records = gff_filter.apply_filters(seq_records=seq, feature_type=feature_type)
+    gff_records = gff_filter.apply_filters(seq_records=seq, feature_type=feature_type, unique_col_name=unique_col_name)
     assert gff_records.df is not None, "The GFF file is empty"
 
     seq_filter = SequenceFilter(seq_records=seq, logger=log, verbose=False)

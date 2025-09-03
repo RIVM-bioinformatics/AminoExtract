@@ -7,6 +7,8 @@ import pytest
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
+from AminoExtract.__main__ import AminoAcidExtractor
+
 # see tests/unit/test_reader.py for explanation
 # pylint: disable=import-error
 from AminoExtract.gff_data import SplicingInfo
@@ -56,9 +58,7 @@ def fixture_sample_feature() -> FeatureData:
 @pytest.fixture(name="sample_splicing_info")
 def fixture_sample_splicing_info() -> list[SplicingInfo]:
     """Return a sample splicing info list"""
-    return [
-        SplicingInfo(cds_locations=[(1, 6)], parent_ids={"parent1"}, gene_id="gene1")
-    ]
+    return [SplicingInfo(cds_locations=[(1, 6)], parent_ids={"parent1"}, gene_id="gene1")]
 
 
 @pytest.fixture(name="sample_gff_data")
@@ -80,9 +80,7 @@ def fixture_sample_gff_data() -> GFFDataFrame:
     return gff
 
 
-def test_process_sequence_no_gaps(
-    sequence_extractor: SequenceExtractor, sample_sequence: Seq
-) -> None:
+def test_process_sequence_no_gaps(sequence_extractor: SequenceExtractor, sample_sequence: Seq) -> None:
     """Test sequence processing with gaps disabled"""
     result = sequence_extractor._process_sequence(sample_sequence)
     assert str(result) == "ATGCCTAG"
@@ -102,9 +100,7 @@ def test_extract_single_exon(
     sample_feature: FeatureData,
 ) -> None:
     """Test extracting a single exon sequence"""
-    result = sequence_extractor._extract_single_exon(
-        sample_seq_dict, sample_exon, sample_feature
-    )
+    result = sequence_extractor._extract_single_exon(sample_seq_dict, sample_exon, sample_feature)
     assert str(result) == "ATGCCC"  # 1-based to 0-based conversion
 
 
@@ -122,9 +118,7 @@ def test_combine_exons_reverse(sequence_extractor: SequenceExtractor) -> None:
     assert str(result) == "CTAGGGCAT"  # Reverse complement
 
 
-def test_extract_feature(
-    sequence_extractor: SequenceExtractor, sample_seq_dict: dict[str, Seq]
-) -> None:
+def test_extract_feature(sequence_extractor: SequenceExtractor, sample_seq_dict: dict[str, Seq]) -> None:
     """
     Test complete feature extraction.
 
@@ -171,7 +165,9 @@ def test_extract_aminoacids_integration(
 
     sample_gff_data.splicing_info = sample_splicing_info
 
-    result = sequence_extractor.extract_aminoacids(sample_gff_data, seq_records)
+    unique_column_name = AminoAcidExtractor.get_unique_col_name(sample_gff_data)
+
+    result = sequence_extractor.extract_aminoacids(sample_gff_data, seq_records, unique_col_name=unique_column_name)
     assert isinstance(result, dict)
     assert "seq1" in result
     assert isinstance(result["seq1"], dict)
