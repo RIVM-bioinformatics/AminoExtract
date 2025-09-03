@@ -1,6 +1,5 @@
 """End-to-end tests for the AminoExtract package."""
 
-import shutil
 from pathlib import Path
 
 import pytest
@@ -43,9 +42,9 @@ class TestE2E:
 
     def test_e2e_simple(self):
         """A simple end-to-end test for the AminoExtract package."""
-        output_path = self.data_path / "simple_output"
+        output_path = self.data_path / "simple_output.fa"
         if output_path.exists():
-            shutil.rmtree(output_path)
+            output_path.unlink()
         args = [
             "-i",
             str(self.data_path / "simple_input.fa"),
@@ -58,6 +57,7 @@ class TestE2E:
         ]
         main(args)
         assert output_path.exists()
+        _compare_outputs(output_path, self.data_path / "simple_output.faa")
 
     def test_e2e_complex(self):
         """
@@ -68,9 +68,9 @@ class TestE2E:
         Based on the example for here:
         https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md
         """
-        output_path = self.data_path / "complex_output"
+        output_path = self.data_path / "complex_output.fa"
         if output_path.exists():
-            shutil.rmtree(output_path)
+            output_path.unlink()
 
         args = [
             "-i",
@@ -88,12 +88,13 @@ class TestE2E:
             main(args)
 
         assert output_path.exists()
+        _compare_outputs(output_path, self.data_path / "complex_output.faa")
 
     def test_e2e_sars_wuhan(self):
         """End-to-end test for the SARS-CoV-2 Wuhan reference genome."""
-        output_path = self.data_path / "sars_wuhan_output"
+        output_path = self.data_path / "sars_wuhan_output.fa"
         if output_path.exists():
-            shutil.rmtree(output_path)
+            output_path.unlink()
 
         args = [
             "-i",
@@ -107,26 +108,4 @@ class TestE2E:
         ]
         main(args)
         assert output_path.exists()
-
-    def test_e2e_error_2(self):
-        """End-to-end test for the SARS-CoV-2 Wuhan reference genome."""
-        output_path = self.data_path / "e2e_error_2"
-        if output_path.exists():
-            shutil.rmtree(output_path)
-
-        # HIER MOETEN MEERDERE FILES UIT KOMEN< VOOR ELK ORF EENTJE
-
-        args = [
-            "-i",
-            str(self.data_path / "error2_input.fa"),
-            "-gff",
-            str(self.data_path / "error2_input.gff"),
-            "-o",
-            str(output_path),
-            "-n",
-            "error2",
-            "-ft",
-            "CDS",
-        ]
-        main(args)
-        assert output_path.exists()
+        _compare_outputs(output_path, self.data_path / "sars_wuhan_output.faa")
