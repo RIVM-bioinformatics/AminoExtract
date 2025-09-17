@@ -38,3 +38,10 @@ AminoExtract = "AminoExtract.__main__:main"
 
 [tool.hatch.version]
 path = "AminoExtract/__init__.py"
+
+[tool.pylint]
+max-line-length = 150
+
+[tool.black]
+line-length = 150
+target-version = ['py310']

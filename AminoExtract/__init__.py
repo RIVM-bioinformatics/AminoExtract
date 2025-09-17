@@ -30,7 +30,7 @@ __version__ = "0.3.1"
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
 # use contextlib to suppress the ImportError
-# This may occur when this file is imported in setup.py as dependencies are not yet installed
+# This may occur when this file is imported in downstream modules which may technically cause a circular import
 with contextlib.suppress(ImportError):
     from AminoExtract.__main__ import (
         AminoAcidExtractor,

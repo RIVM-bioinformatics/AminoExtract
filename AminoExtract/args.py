@@ -31,11 +31,7 @@ def set_output_type(args: argparse.Namespace) -> argparse.Namespace:
         )
         args.outtype = 1
         return args
-    log.info(
-        "The given output seems to be a file.\n"
-        "All amino acid sequences will be written to this file.\n"
-        f"([cyan]{args.output}[/cyan])"
-    )
+    log.info("The given output seems to be a file.\n" "All amino acid sequences will be written to this file.\n" f"([cyan]{args.output}[/cyan])")
     args.outtype = 0
     return args
 
@@ -59,16 +55,13 @@ def check_valid_output_filename(args: argparse.Namespace) -> argparse.Namespace:
     output_ext = PurePath(args.output).name
     if not re.match(r"^[\w\-. ]+$", output_ext) or "/." in str(args.output):
         log.error(
-            f"'[red]{output_ext}[/red]' does not seem to be a valid filename.\n"
-            "Please use only alphanumeric characters, underscores, and dashes."
+            f"'[red]{output_ext}[/red]' does not seem to be a valid filename.\n" "Please use only alphanumeric characters, underscores, and dashes."
         )
         sys.exit(1)
     return args
 
 
-def check_file_ext(
-    fname: str | None = None, choices: list[str] | None = None, ftype: str | None = None
-) -> Path | None:
+def check_file_ext(fname: str | None = None, choices: list[str] | None = None, ftype: str | None = None) -> Path | None:
     """Check if the file exists and has a valid extension
 
     Parameters
@@ -116,20 +109,13 @@ def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
     parser = RichParser(
         prog=f"[bold]{__prog__}[/bold]",
         usage=rf"{__prog__} \[required options] \[optional options]",
-        description=(
-            f"[bold underline]{__prog__}[/bold underline]:"
-            " A quick tool to extract amino acid sequences from a FASTA file."
-        ),
+        description=(f"[bold underline]{__prog__}[/bold underline]:" " A quick tool to extract amino acid sequences from a FASTA file."),
         formatter_class=QuickArgFormatter,
         add_help=False,
     )
 
-    req_args = parser.add_argument_group(
-        title="[bold underline]Required Arguments[/bold underline]"
-    )
-    opt_args = parser.add_argument_group(
-        "[bold underline]Optional Arguments[/bold underline]"
-    )
+    req_args = parser.add_argument_group(title="[bold underline]Required Arguments[/bold underline]")
+    opt_args = parser.add_argument_group("[bold underline]Optional Arguments[/bold underline]")
 
     req_args.add_argument(
         "--input",

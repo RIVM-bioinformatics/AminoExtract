@@ -21,9 +21,7 @@ def generate_random_sequence(length: int, no_stop_codons=False) -> str:
 
     def _replacer(seq):
         for stop_codon in stop_codons:
-            seq = seq.replace(
-                stop_codon, "".join(secrets.choice("ATGC") for _ in range(3))
-            )
+            seq = seq.replace(stop_codon, "".join(secrets.choice("ATGC") for _ in range(3)))
         return seq
 
     while _detector(seq):

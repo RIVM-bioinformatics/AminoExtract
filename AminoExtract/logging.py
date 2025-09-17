@@ -136,11 +136,7 @@ class QuickArgFormatter(FlexiFormatter):
             The help text for the action.
         """
         help_text = action.help
-        if (
-            action.default != SUPPRESS
-            and "default" not in help_text.lower()
-            and action.default is not None
-        ):
+        if action.default != SUPPRESS and "default" not in help_text.lower() and action.default is not None:
             help_text += f"\n ([underline]default: {str(action.default)}[/underline])"
         return help_text
 
@@ -154,7 +150,5 @@ class RichParser(ArgumentParser):
     # We ignore the override of the typing of the _file variable because we cannot
     # add the correct typing (SupportsWrite) because it is internally defined.
     # We dont use it anyway.
-    def _print_message(
-        self, message: str, _file: Optional[IO[str]] = None  # type: ignore[override]
-    ) -> None:
+    def _print_message(self, message: str, _file: Optional[IO[str]] = None) -> None:  # type: ignore[override]
         return rich.print(message)
