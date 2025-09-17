@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.4.0](https://github.com/RIVM-bioinformatics/AminoExtract/compare/v0.3.1...v0.4.0) (2025-09-17)
+
+
+### Features
+
+* add a write out to gff method to the GFFDataframe class ([d2fffb2](https://github.com/RIVM-bioinformatics/AminoExtract/commit/d2fffb22a402a44e9ce46c8876fc32785632393d))
+* added spliced gene support ([4b597bb](https://github.com/RIVM-bioinformatics/AminoExtract/commit/4b597bbddab4e2236df63c8e12a6c66d3797fc5e))
+* AmpliGone.reader - added support for space seperated GFF file instead of only ; separeted, formatted with black ([eac5985](https://github.com/RIVM-bioinformatics/AminoExtract/commit/eac5985e2d296f8a9ecb60a9afaf15c80671f9a2))
+
+
+### Bug Fixes
+
+* "seqid" column is also fine for splicing info instead of just "ID" column ([d567c54](https://github.com/RIVM-bioinformatics/AminoExtract/commit/d567c54e69f5cc9fd13171cca52e0314f03f0b96))
+* add configless gff reader access ([e81bc29](https://github.com/RIVM-bioinformatics/AminoExtract/commit/e81bc29573946d294ab41e3e1d4f66d5b3442b81))
+* add header to gff write out ([977a8e7](https://github.com/RIVM-bioinformatics/AminoExtract/commit/977a8e79f9b2bdbc031a2aab640117a75c6b7ff6))
+* add Name column to features even if not in gff ([b003a66](https://github.com/RIVM-bioinformatics/AminoExtract/commit/b003a662d842461726553cd84b8c7c6c04aab465))
+* added better Name attribute normalization ([56f5638](https://github.com/RIVM-bioinformatics/AminoExtract/commit/56f56381dd8485cf9bcc6be77902ddb5f1e27104))
+* also added splicing information for samples without splicing. Fixed 1-based inclusiveness. ([17a6ed9](https://github.com/RIVM-bioinformatics/AminoExtract/commit/17a6ed91e54f9cea580ce1a2ee0e5844151f5544))
+* also fix when using get_feat_name_attr ([037fe59](https://github.com/RIVM-bioinformatics/AminoExtract/commit/037fe5977d33c78f01d92e6f6c888fe3da29a3b5))
+* AminoExtract.logging - fixed typing ([4d3f446](https://github.com/RIVM-bioinformatics/AminoExtract/commit/4d3f4465ae3f25633a8aa9eee3e0ab4cbc5a547c))
+* AminoExtract.reader - added _normalize_attributes step to change gene_name into Name ([7b4c1fe](https://github.com/RIVM-bioinformatics/AminoExtract/commit/7b4c1fe55f7a4a98b4447499b017078da6469e6b))
+* complex get_feature_name_attributes with many differnt feature_types ([17f0645](https://github.com/RIVM-bioinformatics/AminoExtract/commit/17f06453e410ace7fe6e8ee6c924fd3240352f79))
+* env.yml - intel channel is no longer accesible, throws an error ([eac5985](https://github.com/RIVM-bioinformatics/AminoExtract/commit/eac5985e2d296f8a9ecb60a9afaf15c80671f9a2))
+* fixed all pylint issues ([3aa58f2](https://github.com/RIVM-bioinformatics/AminoExtract/commit/3aa58f24a945dce926295ac6262b9a64d8d5c01e))
+* fixed issues and security hotspots identified by sonarqube ([457239d](https://github.com/RIVM-bioinformatics/AminoExtract/commit/457239d5b94aa5a46de3f7ab50ec974df5dc47de))
+* fixed string ending with ; issue ([9e130fc](https://github.com/RIVM-bioinformatics/AminoExtract/commit/9e130fc0438deaed13006b3858c0f3e29b19f1e1))
+* include optional seqid instead of ID ([72765d8](https://github.com/RIVM-bioinformatics/AminoExtract/commit/72765d85e351c7af01cbaf12d7cb197101a9c8fc))
+* remove colnames from gff ([a818684](https://github.com/RIVM-bioinformatics/AminoExtract/commit/a818684be081a15575dda4e5560e5eab65e15df1))
+* removed logging because there is no log ([bbf44b4](https://github.com/RIVM-bioinformatics/AminoExtract/commit/bbf44b4df3b6d0f01edaa1f88da443e7138b027a))
+* split different CDS into new lines in complex GFF files ([4797735](https://github.com/RIVM-bioinformatics/AminoExtract/commit/4797735c091c49584dd48543cedbea90532a863d))
+* update GffDataFrame dtype definition to support int-based seqids ([eac306f](https://github.com/RIVM-bioinformatics/AminoExtract/commit/eac306f26d828ebb5aa0b92020eb940623086f22))
+* using intel as a channel causes the installation to fail due to a HTTP 403 (Forbidden) error. As it is not required for the depencies it can safely be removed. ([9056c1f](https://github.com/RIVM-bioinformatics/AminoExtract/commit/9056c1fa54b5701237ff52212d655d9b51af29a1))
+
 ## [0.3.1](https://github.com/RIVM-bioinformatics/AminoExtract/compare/v0.3.0...v0.3.1) (2023-09-12)
 
 
