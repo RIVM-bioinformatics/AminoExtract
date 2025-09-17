@@ -1,109 +1,141 @@
+"""Sequence extraction module for AminoExtract."""
+
+from dataclasses import dataclass
+from logging import Logger
+
 from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from pandas import Series
 
-from AminoExtract.functions import log
-from AminoExtract.reader import GffDataFrame, _split_attributes_column
-
-
-def Reverse_complement(seq: str) -> Seq:
-    """Reverse complement a sequence
-
-    Parameters
-    ----------
-    seq : str
-        The sequence to reverse complement
-
-    Returns
-    -------
-    Seq
-        The reverse complement of the input sequence
-    """
-    seq_obj = Seq(seq)  # create a Seq object from the sequence
-    return seq_obj.reverse_complement()  # type: ignore as BioPythons seq object is weird with typehints
+from AminoExtract.gff_data import SplicingInfo
+from AminoExtract.logging import log
+from AminoExtract.reader import GFFDataFrame
 
 
-def extract_aminoacids(
-    GFFobj: GffDataFrame,
-    SeqRecords: list,
-    keep_gaps: bool = False,
-    verbose: bool = False,
-) -> dict:
-    """
-    Extract amino acids from the SeqRecord objects based on the start and end positions of the GFFobj.df dataframe
+@dataclass
+class ExonData:
+    """Dataclass for exon information"""
 
-    Parameters
-    ----------
-    GFFobj : GffDataFrame object
-        GffDataFrame
-    SeqRecords : list
-        list of SeqRecord objects
-    keep_gaps : bool, optional
-        If True, gaps ('-') in the nucleotide sequence will not be removed before AA translation.
-        If False, gaps will be removed from the nucleotide sequence before translation.
-        (default is False)
-    verbose : bool, optional
-        bool = False
+    start: int
+    end: int
+    strand: str
+    phase: int
 
-    Returns
-    -------
-        A dictionary with the sequence ID as the key and a dictionary as the value. The dictionary has the
-    name of the feature as the key and the amino acid sequence as the value.
 
-    """
+@dataclass
+class FeatureData:
+    """Dataclass for feature information"""
 
-    log.info(
-        "Extracting and translating the amino acid sequence(s) from the nucleotide sequence(s)"
-    ) if verbose else None
+    name: str
+    exons: list[ExonData]
+    sequence_id: str
 
-    # create a dictionary with the SeqRecord.id as the key and the SeqRecord.seq as the value
-    SeqDict = {record.id: record.seq for record in SeqRecords}
-    # create an empty dictionary
-    AA_dict = {record.id: {} for record in SeqRecords}
 
-    tempdf = GFFobj.df.copy()
-    if "attributes" in tempdf.columns:
-        tempdf = _split_attributes_column(df=tempdf)
+class SequenceExtractor:
+    """Extract amino acid sequences from sequence records based on GFF annotations."""
 
-    # iterate through the dataframe
-    for row in tempdf.itertuples():
-        try:
-            name = row.Name
-        except AttributeError:
-            log.warn(
-                "No '[green]Name[/green]' attribute found in GFF records. Using '[cyan]ID[/cyan]' instead"
-            ) if verbose else None
-            name = f"ID-{row.ID}"
+    def __init__(self, logger: Logger = log, verbose: bool = False, keep_gaps: bool = False) -> None:
+        self.logger = logger
+        self.verbose = verbose
+        self.keep_gaps = keep_gaps
 
-        # get the sequence ID from the row
-        seq_id = row.seqid
+    def _process_sequence(self, sequence: Seq) -> Seq:
+        """Process sequence based on gap handling preference"""
+        if self.keep_gaps:
+            return sequence.replace("-", "N")
+        return sequence.replace("-", "")
 
-        # get the start and end positions from the row
-        # subtract 1 from the start position to account for 0-based indexing
-        # end position is also 0-based but we don't need to subtract 1 because of the way python slices function
-        start, end = row.start - 1, row.end
+    def _extract_single_exon(
+        self,
+        seq_dict: dict[str, Seq],
+        exon: ExonData,
+        feat: FeatureData,
+    ) -> Seq:
+        """Extract sequence for a single exon"""
 
-        # get the nucleotide sequence from the sequence dictionary
-        NucSequence = SeqDict[seq_id]
+        # GFF start and end values are 1-based indexed and inclusive
+        # https://www.ensembl.org/info/website/upload/gff.html
+        start = exon.start - 1  # Convert to 0-based
+        sequence = seq_dict[feat.sequence_id][start : exon.end]
+        return self._process_sequence(sequence)
 
-        # get the sequence slice from the start to the end position
-        seq_slice = (
-            NucSequence[start:end].replace("-", "N")
-            if keep_gaps
-            else NucSequence[start:end].replace("-", "")
-        )
+    def _combine_exons(self, sequences: list[Seq], strand: str) -> Seq:
+        """Combine exon sequences and handle strand orientation"""
+        combined = sum(sequences, Seq(""))
+        return combined.reverse_complement() if strand == "-" else combined
 
-        # convert the sequence slice to a string
-        seq_slice_str = str(seq_slice)
+    def extract_feature(self, feature: FeatureData, seq_dict: dict[str, Seq]) -> Seq:
+        """Extract and translate sequence for a single feature"""
+        exon_sequences = [self._extract_single_exon(seq_dict, exon, feature) for exon in feature.exons]
 
-        # reverse complement the sequence slice if the strand is negative
-        if row.strand == "-":
-            seq_slice_str = Reverse_complement(seq_slice_str)
+        full_seq = self._combine_exons(exon_sequences, feature.exons[0].strand)
+        return full_seq.translate(to_stop=True)
 
-        # create a Seq object from the sequence slice
-        seq_slice_obj = Seq(seq_slice_str)
+    def _get_splicing_detail(self, gff_obj: GFFDataFrame, row: Series) -> SplicingInfo:
+        """
+        Retrieve splicing details for a GFF row, using available identifiers.
+        It needs to find a unique identifier, so it tries ID and gene first.
+        seqid is a fallback because most GFF files have them, but it is not unique so it wont split features.
+        """
+        gene_id = getattr(row, "ID", None) or getattr(row, "gene", None) or getattr(row, "seqid", None)
+        if gene_id is None:
+            raise ValueError("Row must have an 'ID', 'gene', or 'seqid' attribute for splicing details.")
 
-        # translate the sequence slice to amino acids
-        AASequence = seq_slice_obj.translate(to_stop=True)
+        assert gff_obj.splicing_info is not None, "No splicing information loaded"
+        splicing_details = [x for x in gff_obj.splicing_info if gene_id == x.gene_id]
+        if len(splicing_details) != 1:
+            raise ValueError(f"Expected one splicing detail for gene_id '{gene_id}', found {len(splicing_details)}")
+        return splicing_details[0]
 
-        # add the amino acid sequence to the amino_acid_dict dictionary
-        AA_dict[seq_id][name] = AASequence
-    return AA_dict
+    def _get_exons(self, row, splicing_info: SplicingInfo) -> list[ExonData]:
+        """Extract exon information from GFF row"""
+        return [ExonData(cds[0], cds[1], row.strand, getattr(row, "phase", 0)) for cds in splicing_info.cds_locations]
+
+    def extract_aminoacids(self, gff_obj: GFFDataFrame, seq_records: list[SeqRecord], unique_col_name: str) -> dict[str, dict[str, Seq]]:
+        """Extract amino acid sequences from sequence records based on GFF annotations.
+
+        Parameters
+        ----------
+        gff_obj : GffDataFrame
+            GFF annotation data
+        seq_records : list[SeqRecord]
+            Sequence records to process
+        keep_gaps : bool
+            Whether to preserve gaps in sequences
+        verbose : bool
+            Enable verbose logging
+
+        Returns
+        -------
+        dict[str, dict[str, Seq]]
+            Nested dictionary of sequence IDs and their features' amino acid sequences
+        """
+
+        # This next block is a bit weird, because it would be easier to use 2 dict comprehensions
+        # But SeqRecord objects are not guaranteed to have IDs, so we need to check for that
+        # Besides, now we only need to iterate over the sequence records once
+        seq_dict: dict[str, Seq] = {}
+        for record in seq_records:
+            if record.id is None:
+                raise ValueError("Sequence record ID cannot be None")
+            seq_dict[record.id] = record.seq
+            result: dict[str, dict[str, Seq]] = {}
+            result[record.id] = {}
+
+        assert gff_obj.df is not None, "No dataframe of the GFF loaded"  # sanity check
+
+        # I do not see a way to avoid this for loop, I tried vectorizing it but it became unreadable
+        for _, row in gff_obj.df.iterrows():
+            name = getattr(row, "Name", f"ID-{row.seqid}-{getattr(row, unique_col_name, 'unknown')}")
+
+            splicing_detail = self._get_splicing_detail(gff_obj, row)
+
+            feature = FeatureData(
+                name=name,
+                sequence_id=row.seqid,
+                exons=self._get_exons(row, splicing_detail),
+            )
+
+            result[feature.sequence_id][feature.name] = self.extract_feature(feature, seq_dict)
+
+        return result

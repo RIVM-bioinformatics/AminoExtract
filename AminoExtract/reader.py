@@ -1,244 +1,222 @@
-import gzip
-import sys
+"""Module for reading GFF and FASTA files."""
 
-import magic
+import re
+import sys
+from logging import Logger
+from pathlib import Path
+
 import pandas as pd
 from Bio import SeqIO
+from Bio.SeqIO.FastaIO import SeqRecord
 
-from AminoExtract.functions import log
+from AminoExtract.file_utils import FileUtils
+from AminoExtract.gff_data import GFFColumns, GFFHeader, SplicingInfo
+from AminoExtract.logging import log
 
 
-# It reads in a GFF file and stores its contents as a GFFdataframe object
-class GffDataFrame(object):
+class AttributeParser:
+    """Handles GFF attributes"""
+
+    @staticmethod
+    def parse_attributes(attr_string: str) -> dict[str, str]:
+        """
+        Takes a string like "a=1;b=2;c=3",
+        and returns a dictionary like {"a": "1", "b": "2", "c": "3"}
+
+        Parameters
+        ----------
+        string : str
+            The string to parse.
+
+        Returns
+        -------
+        dict
+            A dictionary with the key being the attribute name,
+            and the value being the attribute value.
+        """
+
+        attr_string_without_quotes = attr_string.replace('"', "").replace("'", "").strip()
+
+        try:
+            pairs = [pair.split("=") if "=" in pair else pair.split(" ") for pair in attr_string_without_quotes.split(";")]
+            for x in pairs:
+                if len(x) == 1:
+                    pairs.remove(x)
+        except ValueError as e:
+            raise ValueError(f"{attr_string} is not separated by '=' or ' '") from e
+
+        return dict(pairs)
+
+    @staticmethod
+    def normalize_name_attribute(attr: str) -> str:
+        """
+        Checks if there is a 'Name' like attribute in the GFF attributes.
+        If there is, it normalizes it to 'Name'.
+        If there is not, copy the 'gene_name' like attribute to 'Name'.
+        If there is also not a gene_name attribute, copy the 'id' like attribute to 'Name'.
+        If there is still nothing, copy the 'seqid' like attribute to 'Name'.
+        Else leave empty, it will turn in pd.NA later
+        """
+        if re.search(r"\bname\b", attr, flags=re.IGNORECASE):
+            attr = re.sub(r"\bname\b", "Name", attr, flags=re.IGNORECASE)
+        elif match := re.search(r"\bgene_name=([^;]+)", attr, flags=re.IGNORECASE):
+            attr += f";Name={match.group(1)}"
+        elif match := re.search(r"\bid=([^;]+)", attr, flags=re.IGNORECASE):
+            attr += f";Name={match.group(1)}"
+        elif match := re.search(r"\bseqid=([^;]+)", attr, flags=re.IGNORECASE):
+            attr += f";Name={match.group(1)}"
+        return attr
+
+
+class GFFDataFrame:
+    """Class for reading and processing GFF files."""
+
+    # This class does all its work in the constructor, so maybe it could be a function,
+    # but I like the idea of having a class that represents a GFF file
+    # pylint: disable=too-few-public-methods
+
     def __init__(
         self,
+        inputfile: str | Path,
         logger=log,
-        inputfile: str | None = None,
         verbose: bool = False,
-        split_attributes: bool = False,
     ) -> None:
-        None if inputfile else sys.exit("Inputfile is not provided")
-        if readable_file_type(inputfile):
-            self.inputfile = inputfile
-            self.log = logger
-            self.verbose = verbose
-            self.log.info(
-                f"Parsing GFF input file: '[green]{inputfile}[/green]'"
-            ) if verbose else None
-            self._read()
-            self._read_header()
-            self.df = _split_attributes_column(self.df) if split_attributes else self.df
-        else:
-            self.log = log
-            self.verbose = verbose
-            self.log.error(
-                f"Input file is not readable: {inputfile}"
-            ) if self.verbose else None
-            sys.exit(1)
+        self.file_path = Path(inputfile)
+        self.logger = logger
+        self.verbose = verbose
+        self.header: GFFHeader | None = None
+        self.df: pd.DataFrame | None = None
+        self.splicing_info: list[SplicingInfo] | None = None
 
-    # def split_attributes_column(self) -> pd.DataFrame:
-    #     """Takes a dataframe with a column called "attributes" that contains a string of attributes, and it
-    #     returns a dataframe with the attributes split into separate columns
+        if not self._validate_input():
+            sys.exit(f"Input file is not readable: {self.file_path}")
 
-    #     Parameters
-    #     ----------
-    #     df : pd.DataFrame
+        self._load_data()
 
-    #     Returns
-    #     -------
-    #         A dataframe with the attributes column split into individual columns.
+    def _validate_input(self) -> bool:
+        return self.file_path.exists() and FileUtils.is_readable(self.file_path)
 
-    #     """
-    #     self.df["attributes"] = self.df["attributes"].apply(_attr_string_to_dict)
-    #     df = self.df.join(pd.DataFrame(self.df["attributes"].to_dict()).T).drop(
-    #         "attributes", axis=1
-    #     )
-    #     return df
+    def _load_data(self) -> None:
+        self.header = GFFHeader.from_file(self.file_path)
+        self.df = self._read_gff_data()
+        self._process_attributes()
 
-    def _read(self) -> pd.DataFrame:
-        if _is_gzipped(self.inputfile):
-            return self._read_gff_gzipped()
-        else:
-            return self._read_gff_uncompressed()
-
-    def _read_gff_gzipped(self) -> pd.DataFrame:
-        self.df = pd.read_csv(
-            self.inputfile,
+    def _read_gff_data(self) -> pd.DataFrame:
+        # compression must be in dict format
+        # https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html
+        compression = {"method": "gzip"} if FileUtils.is_gzipped(self.file_path) else None
+        return pd.read_csv(
+            self.file_path,
             sep="\t",
             comment="#",
-            names=[
-                "seqid",
-                "source",
-                "type",
-                "start",
-                "end",
-                "score",
-                "strand",
-                "phase",
-                "attributes",
-            ],
-            compression="gzip",
+            names=GFFColumns.get_names(),
+            dtype=GFFColumns.get_dtypes(),
+            compression=compression,
             keep_default_na=False,
         )
-        return self.df
 
-    def _read_gff_uncompressed(self) -> pd.DataFrame:
-        self.df = pd.read_csv(
-            self.inputfile,
-            sep="\t",
-            comment="#",
-            names=[
-                "seqid",
-                "source",
-                "type",
-                "start",
-                "end",
-                "score",
-                "strand",
-                "phase",
-                "attributes",
-            ],
-            keep_default_na=False,
-        )
-        return self.df
+    def _process_attributes(self) -> None:
+        if self.df is None:
+            return
+        self.df["attributes"] = self.df["attributes"].apply(AttributeParser.normalize_name_attribute)
 
-    def _read_header(self):
-        self.header = ""
-        if _is_gzipped(self.inputfile):
-            with gzip.open(self.inputfile, "rt") as f:
-                for line in f:
-                    if line.startswith("#"):
-                        self.header += line
-                    else:
-                        break
-        else:
-            with open(self.inputfile, "r") as f:
-                for line in f:
-                    if line.startswith("#"):
-                        self.header += line
-                    else:
-                        break
-        return self.header
+        # parsing and expanding make significant changes to the attributes column,
+        # this makes it unable to be written back to the original GFF format
+        self._expand_attributes()
 
+    def _expand_attributes(self) -> None:
+        """Expand attributes into separate columns, must be called after parsing attributes"""
+        if self.df is None:
+            return
 
-def _split_attributes_column(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Takes a dataframe with a column called "attributes" that contains a string of attributes, and it
-    returns a dataframe with the attributes split into separate columns.
+        self.df["parsed_attributes"] = self.df["attributes"].apply(AttributeParser.parse_attributes)
 
-    Parameters
-    ----------
-    None
+        existing_cols = set(self.df.columns)
+        attr_df = pd.DataFrame(self.df["parsed_attributes"].tolist())
 
-    Returns
-    -------
-    pd.DataFrame
-        A dataframe with the attributes column split into individual columns.
-    """
-    df["attributes"] = df["attributes"].apply(_attr_string_to_dict)
-    columns = df.columns.tolist()
-    # remove key-value pair from the dictionary in the attributes column if the key is already a column
-    df["attributes"] = df["attributes"].apply(
-        lambda attr: {k: v for k, v in attr.items() if k not in columns}
-    )
-    df = df.join(pd.DataFrame(df["attributes"].to_dict()).T).drop("attributes", axis=1)
-    return df
+        # Only add new columns
+        new_cols = [col for col in attr_df.columns if col not in existing_cols]
+        if new_cols:
+            self.df = pd.concat([self.df, attr_df[new_cols]], axis=1)
+
+        # I need Parent to be a column, even if it's empty
+        # This is because I use it to groupby in the GFFFilter class
+        if "Parent" not in self.df.columns:
+            self.df["Parent"] = None
+
+        self.df.drop(columns=["parsed_attributes"], inplace=True)
+
+    def validate_dataframe(self, feature_type: str | None = None) -> bool:
+        """Returns True if the dataframe is not empty and the feature type is not None"""
+        if self.df is None or feature_type is None:
+            self.logger.warning(
+                "The GFF file is empty after filtering.\n"
+                "This might mean that there are no records within the GFF that match the "
+                "sequence ID(s) in the given Fasta file.\n"
+                "This could also mean that there are no records within the GFF that match "
+                f"the feature type '[cyan]{feature_type}[/cyan]'.\n"
+                "Please check your inputs and try again."
+            )
+            return False
+        return True
+
+    def export_gff_to_file(self, path: str) -> None:
+        """
+        Writes out the df to a gff file according to the GFF3 spec.
+        This means the combined attributes column is included, but the individual attribute columns are not.
+        """
+        assert self.df is not None, "DataFrame must be set before writing out GFF file"
+        output_df = self.df[["seqid", "source", "type", "start", "end", "score", "strand", "phase", "attributes"]]
+
+        with open(path, "w", encoding="utf-8") as f:
+            assert self.header is not None, "Header must be set before writing out GFF file"
+            f.write(self.header.export_header_text())
+            f.write(output_df.to_csv(sep="\t", index=False, header=False))
 
 
-def _attr_string_to_dict(string: str) -> dict:
-    """
-    Takes a string like "a=1;b=2;c=3" and returns a dictionary like {"a": "1", "b": "2", "c": "3"}
+class SequenceReader:
+    """Handles reading sequence and gff files"""
 
-    Parameters
-    ----------
-    string : str
-        The string to parse.
+    def __init__(self, logger: Logger, verbose: bool = False) -> None:
+        self.logger = logger
+        self.verbose = verbose
 
-    Returns
-    -------
-    dict
-        A dictionary with the key being the attribute name and the value being the attribute value.
-    """
-    return dict([x.split("=") for x in string.split(";") if "=" in x])
+    def read_gff(self, file: Path) -> GFFDataFrame:
+        """
+        Reads a GFF file and returns a GffDataFrame object.
 
+        Parameters
+        ----------
+        file : Path
+            The path to the GFF file to be read.
+        verbose : bool, optional
+            If True, print out the number of lines read in.
+        split_attributes : bool, optional
+            If True, split the attributes column into separate columns.
 
-def _is_gzipped(infile: str) -> bool:
-    """
-    Returns `True` if the file is gzipped, and `False` otherwise.
+        Returns
+        -------
+        GffDataFrame
+            A GffDataFrame object containing the data from the GFF file.
+        """
+        return GFFDataFrame(inputfile=file, logger=self.logger, verbose=self.verbose)
 
-    Parameters
-    ----------
-    infile : str
-        The path to the file to be checked.
+    def read_fasta(self, file: Path) -> list[SeqRecord]:
+        """
+        Reads a FASTA file and returns a list of SeqRecord objects
 
-    Returns
-    -------
-    bool
-        `True` if the file is gzipped, and `False` otherwise.
+        Parameters
+        ----------
+        file : str
+            The path to the FASTA file to be read.
+        verbose : bool, optional
+            If True, log information about the file being parsed.
 
-    """
-    return magic.from_file(infile, mime=True) == "application/gzip"
-
-
-def readable_file_type(infile: str) -> bool:
-    """
-    Returns `True` if the file is a plain text file or a gzip file, and `False` otherwise.
-
-    Parameters
-    ----------
-    infile : str
-        The file to check.
-
-    Returns
-    -------
-    bool
-        A boolean value indicating whether the file is a plain text file or a gzip file.
-    """
-    return bool(
-        magic.from_file(infile, mime=True) == "text/plain" or "application/gzip"
-    )
-
-
-def read_gff(
-    file: str, verbose: bool = False, split_attributes: bool = False
-) -> GffDataFrame:
-    """
-    Reads a GFF file and returns a GffDataFrame object.
-
-    Parameters
-    ----------
-    file : str
-        The path to the GFF file to be read.
-    verbose : bool, optional
-        If True, print out the number of lines read in.
-    split_attributes : bool, optional
-        If True, split the attributes column into separate columns.
-
-    Returns
-    -------
-    GffDataFrame
-        A GffDataFrame object containing the data from the GFF file.
-    """
-    return GffDataFrame(
-        inputfile=file, verbose=verbose, split_attributes=split_attributes
-    )
-
-
-def read_fasta(file: str, verbose: bool = False) -> list:
-    """
-    Reads a FASTA file and returns a list of SeqRecord objects
-
-    Parameters
-    ----------
-    file : str
-        The path to the FASTA file to be read.
-    verbose : bool, optional
-        If True, log information about the file being parsed.
-
-    Returns
-    -------
-    list
-        A list of SeqRecord objects representing the sequences in the input file.
-    """
-    log.info(f"Parsing FASTA input file: '[green]{file}[/green]'") if verbose else None
-    return list(SeqIO.parse(file, "fasta"))
+        Returns
+        -------
+        list
+            A list of SeqRecord objects representing the sequences in the input file.
+        """
+        if self.verbose:
+            self.logger.info(f"Parsing FASTA input file: '[green]{file.name}[/green]'")
+        return list(SeqIO.parse(file, "fasta"))

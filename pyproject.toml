@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "AminoExtract"
+dynamic = ["version"]
+description = "Extract amino acid sequences from a fasta file based on a GFF"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "Florian Zwagemaker", email = "ids-bioinformatics@rivm.nl" }
+    ]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Intended Audience :: Science/Research",
+    "Operating System :: POSIX",
+]
+dependencies = [
+    "biopython>=1.79",
+    "pandas",
+    "rich==13.*",
+    "python-magic==0.4.*"
+    ]
+
+
+[project.urls]
+homepage = "https://github.com/RIVM-bioinformatics/AminoExtract"
+source-code = "https://github.com/RIVM-bioinformatics/AminoExtract"
+
+[project.scripts]
+aminoextract = "AminoExtract.__main__:main"
+AminoExtract = "AminoExtract.__main__:main"
+
+[tool.hatch.version]
+path = "AminoExtract/__init__.py"
+
+[tool.pylint]
+max-line-length = 150
+
+[tool.black]
+line-length = 150
+target-version = ['py310']
