@@ -30,7 +30,7 @@ class Config:
     input_fasta: Path
     input_gff: Path
     output: Path
-    feature_type: str
+    feature_types: list[str]
     keep_gaps: bool
     verbose: bool
     name: str
@@ -95,11 +95,11 @@ class AminoAcidExtractor:
 
         gff_filter = GFFRecordFilter(gff_records=gff_obj, logger=self.log, verbose=self.config.verbose)
         filtered_gff = gff_filter.apply_filters(
-            seq_records=self.seq_records, feature_type=self.config.feature_type, unique_col_name=unique_column_name
+            seq_records=self.seq_records, feature_types=self.config.feature_types, unique_col_name=unique_column_name
         )
 
-        if not filtered_gff.validate_dataframe(self.config.feature_type):
-            raise ValueError("Validation failed, either the GFF file is empty or the feature type is None")
+        if not filtered_gff.validate_dataframe(self.config.feature_types):
+            raise ValueError("Validation failed, either the GFF file is empty or the feature types are invalid")
         return filtered_gff
 
     def _extract_sequences(self, gff_data: GFFDataFrame, unique_column_name: str) -> dict[str, dict[str, Seq]]:
@@ -122,7 +122,7 @@ class AminoAcidExtractor:
         writer.write(sequences, self.config.name, self.config.outtype)
 
 
-def get_feature_name_attribute(input_gff: str, input_seq: str, feature_type: str) -> dict[str, list[str]]:
+def get_feature_name_attribute(input_gff: str, input_seq: str, feature_types: list[str]) -> dict[str, list[str]]:
     """
     This function takes a GFF file, a FASTA file and a feature type,
     and returns a dictionary of the feature names for each sequence in the FASTA file.
@@ -151,7 +151,7 @@ def get_feature_name_attribute(input_gff: str, input_seq: str, feature_type: str
     unique_col_name = AminoAcidExtractor.get_unique_col_name(gff)
 
     gff_filter = GFFRecordFilter(gff_records=gff, logger=log, verbose=False)
-    gff_records = gff_filter.apply_filters(seq_records=seq, feature_type=feature_type, unique_col_name=unique_col_name)
+    gff_records = gff_filter.apply_filters(seq_records=seq, feature_types=feature_types, unique_col_name=unique_col_name)
     assert gff_records.df is not None, "The GFF file is empty"
 
     seq_filter = SequenceFilter(seq_records=seq, logger=log, verbose=False)
@@ -213,7 +213,7 @@ def main(provided_args: list[str] | None = None) -> None:
         input_fasta=args.input,
         input_gff=args.features,
         output=args.output,
-        feature_type=args.feature_type,
+        feature_types=args.feature_type,
         keep_gaps=args.keep_gaps,
         verbose=args.verbose,
         name=args.name,

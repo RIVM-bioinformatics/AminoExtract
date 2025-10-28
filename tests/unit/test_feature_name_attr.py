@@ -3,14 +3,14 @@ from AminoExtract import get_feature_name_attribute
 
 def test_get_feat_name_attr():
     result = get_feature_name_attribute(
-        input_gff="tests/data/unit/test_eqa_reader.gff", input_seq="tests/data/unit/reference_genome.fasta", feature_type="all"
+        input_gff="tests/data/unit/test_eqa_reader.gff", input_seq="tests/data/unit/reference_genome.fasta", feature_types=["all"]
     )
     assert result == {"NC_045512.2": ["1_1", "1_2", "1_3", "1_4", "1_5", "1_6", "1_7", "1_8", "1_9"]}
 
 
 def test_get_feat_name_attr_complex():
     result = get_feature_name_attribute(
-        input_gff="tests/data/unit/test_eqa_reader_complex.gff", input_seq="tests/data/unit/reference_genome.fasta", feature_type="all"
+        input_gff="tests/data/unit/test_eqa_reader_complex.gff", input_seq="tests/data/unit/reference_genome.fasta", feature_types=["all"]
     )
     assert result == {
         "NC_045512.2": [
@@ -67,5 +67,26 @@ def test_get_feat_name_attr_complex():
             "ORF10",
             "ORF10",
             "ORF10",
+        ]
+    }
+
+def test_get_feat_name_attr_complex_filtered():
+    result = get_feature_name_attribute(
+        input_gff="tests/data/unit/test_eqa_reader_complex.gff", input_seq="tests/data/unit/reference_genome.fasta", feature_types=["CDS"]
+    )
+    assert result == {
+        "NC_045512.2": [
+            "ORF1ab",
+            "ORF1ab",
+            "S",
+            "ORF3a",
+            "E",
+            "M",
+            "ORF6",
+            "ORF7a",
+            "ORF7b",
+            "ORF8",
+            "N",
+            "ORF10"
         ]
     }

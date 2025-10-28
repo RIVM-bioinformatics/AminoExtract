@@ -26,11 +26,11 @@ class GFFFilter:
         """Filter GFF records of the GFFFilter class objext by some sequence IDs"""
         return df[df["seqid"].isin(seq_ids)]
 
-    def filter_by_feature_type(self, feature_type: str, df: pd.DataFrame) -> pd.DataFrame:
+    def filter_by_feature_type(self, feature_types: list[str], df: pd.DataFrame) -> pd.DataFrame:
         """Filter GFF records of the GFFFilter class object by some feature type"""
-        if feature_type == "all":
+        if "all" in feature_types:
             return df
-        return df[df["type"] == feature_type]
+        return df[df["type"].isin(feature_types)]
 
     def get_splicing_info(self, filtered_df: pd.DataFrame, unique_col_name: str) -> list[SplicingInfo]:
         """
@@ -72,7 +72,7 @@ class GFFRecordFilter:
         self.filter = GFFFilter(gff_records.df, self.logger, verbose)
         self.verbose = verbose
 
-    def apply_filters(self, seq_records: list[SeqRecord], feature_type: str, unique_col_name: str) -> GFFDataFrame:
+    def apply_filters(self, seq_records: list[SeqRecord], feature_types: list[str], unique_col_name: str) -> GFFDataFrame:
         """
         Applies filters to sequences based on sequence IDs and feature types
         and stores them as a GFFDataFrame object.
@@ -80,21 +80,21 @@ class GFFRecordFilter:
         seq_ids = [record.id for record in seq_records if record.id is not None]
 
         if self.verbose:
-            self._log_filtering_info(seq_ids, feature_type)
+            self._log_filtering_info(seq_ids, feature_types)
 
         assert seq_ids, "No sequence IDs found in the given SeqRecords"
         filtered_df = self.filter.filter_by_seqids(seq_ids, self.filter.df)
-        filtered_df = self.filter.filter_by_feature_type(feature_type, filtered_df)
+        filtered_df = self.filter.filter_by_feature_type(feature_types, filtered_df)
 
         self.gff_records.df = filtered_df
         self.gff_records.splicing_info = self.filter.get_splicing_info(filtered_df, unique_col_name)
 
         return self.gff_records
 
-    def _log_filtering_info(self, seq_ids: list[str], feature_type: str) -> None:
+    def _log_filtering_info(self, seq_ids: list[str], feature_types: list[str]) -> None:
         """Logging for verbose mode"""
         self.logger.info("Filtering GFF records:")
-        self.logger.info(f"Feature type: {feature_type}")
+        self.logger.info(f"Feature types: {', '.join(feature_types)}")
         self.logger.info(f"Sequence IDs: {', '.join(seq_ids)}")
 
 
