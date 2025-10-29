@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/RIVM-bioinformatics/AminoExtract/compare/v0.4.0...v0.4.1) (2025-10-29)
+
+
+### Refactorings
+
+* Allow for filtering of multiple feature types simultaneously. 
+
 ## [0.4.0](https://github.com/RIVM-bioinformatics/AminoExtract/compare/v0.3.1...v0.4.0) (2025-09-17)
 
 

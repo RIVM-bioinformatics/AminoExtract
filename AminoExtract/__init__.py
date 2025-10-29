@@ -25,7 +25,7 @@ import contextlib
 from pathlib import Path
 
 __prog__ = "AminoExtract"
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
