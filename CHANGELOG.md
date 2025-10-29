@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/RIVM-bioinformatics/AminoExtract/compare/v0.4.0...v0.4.1) (2025-10-29)
+
+
+### Miscellaneous Chores
+
+* empty commit for release ([7de8167](https://github.com/RIVM-bioinformatics/AminoExtract/commit/7de8167a06a53ab08b520fb67afd6cca91ff47f6))
+
 ## [0.4.0](https://github.com/RIVM-bioinformatics/AminoExtract/compare/v0.3.1...v0.4.0) (2025-09-17)
 
 
