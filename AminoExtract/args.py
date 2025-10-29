@@ -39,7 +39,7 @@ def set_output_type(args: argparse.Namespace) -> argparse.Namespace:
 def check_features(args: argparse.Namespace) -> argparse.Namespace:
     """Checks if the given feature type is valid."""
 
-    if args.feature_type not in ["CDS", "gene", "all"]:
+    if any(ft not in ["CDS", "gene", "all"] for ft in args.feature_type):
         log.error(
             f"[green]'{args.feature_type}'[/green] is not a valid feature type.\n"
             "Please use any of the following: [bold]'CDS'[/bold],[bold]'gene'[/bold],"
@@ -171,13 +171,14 @@ def get_args(givenargs: list[str] | None = None) -> argparse.Namespace:
     opt_args.add_argument(
         "--feature-type",
         "-ft",
-        type=str,
         metavar="Text",
-        default="CDS",
+        nargs="+",
+        type=str,
+        default=["CDS"],
         help=(
-            "Defines which feature types in the input gff will be processed to AA sequences. "
+            "Defines which feature types in the input GFF will be processed to AA sequences. "
             "Defaults to 'CDS'.\n"
-            "Options are 'CDS', 'gene', and 'all'"
+            "You can provide multiple types (space-separated), e.g. -ft CDS gene exon"
         ),
         required=False,
     )

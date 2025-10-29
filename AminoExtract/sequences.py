@@ -11,7 +11,6 @@ from AminoExtract.gff_data import SplicingInfo
 from AminoExtract.logging import log
 from AminoExtract.reader import GFFDataFrame
 
-
 @dataclass
 class ExonData:
     """Dataclass for exon information"""
@@ -71,12 +70,18 @@ class SequenceExtractor:
         full_seq = self._combine_exons(exon_sequences, feature.exons[0].strand)
         return full_seq.translate(to_stop=True)
 
-    def _get_splicing_detail(self, gff_obj: GFFDataFrame, row: Series) -> SplicingInfo:
+    def _get_splicing_detail(self, gff_obj: GFFDataFrame, row: Series) -> SplicingInfo | None:
         """
         Retrieve splicing details for a GFF row, using available identifiers.
         It needs to find a unique identifier, so it tries ID and gene first.
         seqid is a fallback because most GFF files have them, but it is not unique so it wont split features.
         """
+        # these feature types shouldn't have splicing details and should therefore be ignored. 
+        # Necessary when dealing with a fully annotated GFF and feature_type filter 'all'
+        ignored_feature_types = ["remark", "source", "5'UTR", "3'UTR", "stem_loop"]
+        if row.type in ignored_feature_types:
+            return None
+        
         gene_id = getattr(row, "ID", None) or getattr(row, "gene", None) or getattr(row, "seqid", None)
         if gene_id is None:
             raise ValueError("Row must have an 'ID', 'gene', or 'seqid' attribute for splicing details.")
@@ -129,7 +134,8 @@ class SequenceExtractor:
             name = getattr(row, "Name", f"ID-{row.seqid}-{getattr(row, unique_col_name, 'unknown')}")
 
             splicing_detail = self._get_splicing_detail(gff_obj, row)
-
+            if splicing_detail is None:
+                continue
             feature = FeatureData(
                 name=name,
                 sequence_id=row.seqid,
